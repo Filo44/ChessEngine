@@ -1,13 +1,20 @@
 #include <iostream>
 #include "httplib.h"
 #include <string>
+#include "MoveGen.h"
 
 using namespace std;
+
+using Bitboard = Eigen::Matrix<bool, 8, 8>;
 
 char** fenToMatrix(std::string fen);
 void delete2DArray(char** arr, int rows);
 string convertToString(char** arr, int cols, int rows);
 string convertToJSArr(char** arr, int cols, int rows);
+string convertVofBBJS(vector<Bitboard> matrixVector);
+//BUG, remove if possible
+vector<int> pieceCoordinates(char piece, char** board);
+
 
 
 int main() {
@@ -27,6 +34,25 @@ int main() {
         res.set_content(convertToJSArr(arr, 8, 8), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
         delete2DArray(arr, 8);
+    });
+    
+    svr.Get("/getBitboards", [lFen](const httplib::Request& /*req*/, httplib::Response& res) {
+        std::vector<Bitboard> DUMMYbitboards;
+        //DUMMY BITBOARDS TO TEST FRONT END
+        //REPLACE
+        Bitboard randomBB;
+        randomBB << genEmptyBitboard();
+        randomBB(0,0) = true;
+        Bitboard randomBB2;
+        randomBB2 << genEmptyBitboard();
+        randomBB2(1, 0) = true;
+        //randomBB(1, 0) = true;
+        //randomBB(2, 0) = true;
+        //randomBB(3, 0) = true;
+        DUMMYbitboards.push_back(randomBB);
+        DUMMYbitboards.push_back(randomBB2);
+        res.set_content(convertVofBBJS(DUMMYbitboards), "text/plain");
+        res.set_header("Access-Control-Allow-Origin", "*");
     });
 
     // Run the server
@@ -126,4 +152,34 @@ string convertToJSArr(char** a, int cols, int rows)
     }
     s += "]";
     return s;
+}
+
+string convertVofBBJS(vector<Bitboard> matrixVector) {
+    //cout << matrixVector[0] << endl;
+    std::stringstream ss;
+    ss << "[";
+    for (size_t i = 0; i < matrixVector.size(); ++i) {
+        ss << "[";
+        for (int row = 0; row < matrixVector[i].rows(); ++row) {
+            ss << "[";
+            for (int col = 0; col < matrixVector[i].cols(); ++col) {
+                //cout << "matrixVector[i](row, col):" << matrixVector[i](row, col) << ", which is"<< (matrixVector[i](row, col) ? "true" : "false") << endl;
+                ss << (matrixVector[i](row, col) ? "true" : "false");
+                if (col < matrixVector[i].cols() - 1) {
+                    ss << ",";
+                }
+            }
+            ss << "]";
+            if (row < matrixVector[i].rows() - 1) {
+                ss << ",";
+            }
+        }
+        ss << "]";
+        if (i < matrixVector.size() - 1) {
+            ss << ",";
+        }
+    }
+    ss << "]";
+    string jsonString = ss.str();
+    return jsonString;
 }
