@@ -1,11 +1,10 @@
-#include <iostream>
-#include "httplib.h"
-#include <string>
+#include "Chess.h"
 #include "MoveGen.h"
 
 using namespace std;
 
 using Bitboard = Eigen::Matrix<bool, 8, 8>;
+
 
 char** fenToMatrix(std::string fen);
 void delete2DArray(char** arr, int rows);
@@ -37,21 +36,21 @@ int main() {
     });
     
     svr.Get("/getBitboards", [lFen](const httplib::Request& /*req*/, httplib::Response& res) {
-        std::vector<Bitboard> DUMMYbitboards;
-        //DUMMY BITBOARDS TO TEST FRONT END
-        //REPLACE
-        Bitboard randomBB;
-        randomBB << genEmptyBitboard();
-        randomBB(0,0) = true;
-        Bitboard randomBB2;
-        randomBB2 << genEmptyBitboard();
-        randomBB2(1, 0) = true;
-        //randomBB(1, 0) = true;
-        //randomBB(2, 0) = true;
-        //randomBB(3, 0) = true;
-        DUMMYbitboards.push_back(randomBB);
-        DUMMYbitboards.push_back(randomBB2);
-        res.set_content(convertVofBBJS(DUMMYbitboards), "text/plain");
+        //std::vector<Bitboard> DUMMYbitboards;
+        ////DUMMY BITBOARDS TO TEST FRONT END
+        ////REPLACE
+        //Bitboard randomBB;
+        //randomBB << genEmptyBitboard();
+        //randomBB(0,0) = true;
+        //Bitboard randomBB2;
+        //randomBB2 << genEmptyBitboard();
+        //randomBB2(1, 0) = true;
+        ////randomBB(1, 0) = true;
+        ////randomBB(2, 0) = true;
+        ////randomBB(3, 0) = true;
+        //DUMMYbitboards.push_back(randomBB);
+        //DUMMYbitboards.push_back(randomBB2);
+        res.set_content(convertVofBBJS(main2()), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 

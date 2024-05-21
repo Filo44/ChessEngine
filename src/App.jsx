@@ -17,6 +17,7 @@ function App(){
     const [response,setResponse]=useState("Waiting...")
     const [bitboard,setBitboard]=useState(-1);
     const [currentBitboard, setCurrentBitboard]=useState(0);
+    const [bitboardVisibility,setbitboardVisibility]=useState(true);
     const reference={
         "bb":bb,
         "kb":kb,
@@ -48,20 +49,21 @@ function App(){
             console.error('Error fetching data:', error);
         }
     };
-
+    //*Stupid, for some reason it goes bottom to top. Going to go backwards to reverse it.
     let squaresEls=[];
     if(response!="Waiting..."){
         for(let i=0; i<64;i++){
             let y=Math.floor(i/8);
             let x=i%8;
+            // console.log("x:",x,"y:",y)
             let pieceChar=response[y][x]
             // console.log((bitboard!=-1 && bitboard[currentBitboard][y][x]));
             squaresEls.push(
                 <Square 
                     tileColor={(x+y)%2}
                     piece={pieceChar}
-                    pieceSvg={reference[pieceChar.toLowerCase() + ((pieceChar==pieceChar.toUpperCase())?"b":"w")]}
-                    colored={(bitboard!=-1 && bitboard[currentBitboard][y][x])}
+                    pieceSvg={reference[pieceChar.toLowerCase() + ((pieceChar==pieceChar.toUpperCase())?"w":"b")]}
+                    colored={(bitboard!=-1 && bitboardVisibility && bitboard[currentBitboard][y][x])}
                     color="#FF0000"
                 />
             )
@@ -87,6 +89,9 @@ function App(){
         <button className='bitboardButton'
             onClick={()=>fetchDataW((data)=>{setBitboard(JSON.parse(data))},"getBitboards")}
         >{bitboard==-1? "Get":"Refresh"} bitboard</button>
+        {bitboard!=-1 && <button className='bitboardButton'
+            onClick={()=>setbitboardVisibility((visibility)=>!visibility)}
+        >Turn bitboards {bitboardVisibility? "Off":"On"}</button>}
         {buttonEls}
         </div>
     );
