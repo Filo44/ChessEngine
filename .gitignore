@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+#Utils
+Utils
 
 # Editor directories and files
 .vscode/*
@@ -22,6 +24,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.vcxproj*
+*.aps
 
 #Output files
 x64
