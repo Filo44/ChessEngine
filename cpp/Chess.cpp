@@ -3,8 +3,6 @@
 
 using namespace std;
 
-using Bitboard = Eigen::Matrix<bool, 8, 8>;
-
 
 char** fenToMatrix(std::string fen);
 void delete2DArray(char** arr, int rows);
@@ -40,10 +38,10 @@ int main() {
         ////DUMMY BITBOARDS TO TEST FRONT END
         ////REPLACE
         //Bitboard randomBB;
-        //randomBB << genEmptyBitboard();
+        //randomBB = 0;
         //randomBB(0,0) = true;
         //Bitboard randomBB2;
-        //randomBB2 << genEmptyBitboard();
+        //randomBB2 = 0;
         //randomBB2(1, 0) = true;
         ////randomBB(1, 0) = true;
         ////randomBB(2, 0) = true;
@@ -159,18 +157,19 @@ string convertVofBBJS(vector<Bitboard> matrixVector) {
     ss << "[";
     for (size_t i = 0; i < matrixVector.size(); ++i) {
         ss << "[";
-        for (int row = 0; row < matrixVector[i].rows(); ++row) {
-            ss << "[";
-            for (int col = 0; col < matrixVector[i].cols(); ++col) {
-                //cout << "matrixVector[i](row, col):" << matrixVector[i](row, col) << ", which is"<< (matrixVector[i](row, col) ? "true" : "false") << endl;
-                ss << (matrixVector[i](row, col) ? "true" : "false");
-                if (col < matrixVector[i].cols() - 1) {
+        for (int bit = 0; bit < 64; ++bit) {
+            if (bit % 8 == 0) {
+                ss << "[";
+            }
+            ss << (getBit(matrixVector[i], bit%8, bit/8) ? "true" : "false");
+            if (bit%8!=7) {
+                ss << ",";
+            }
+            else {
+                ss << "]";
+                if (bit / 8 != 7) {
                     ss << ",";
                 }
-            }
-            ss << "]";
-            if (row < matrixVector[i].rows() - 1) {
-                ss << ",";
             }
         }
         ss << "]";
@@ -182,3 +181,33 @@ string convertVofBBJS(vector<Bitboard> matrixVector) {
     string jsonString = ss.str();
     return jsonString;
 }
+
+//string convertVofBBJS(vector<Bitboard> matrixVector) {
+//    //cout << matrixVector[0] << endl;
+//    std::stringstream ss;
+//    ss << "[";
+//    for (size_t i = 0; i < matrixVector.size(); ++i) {
+//        ss << "[";
+//        for (int row = 0; row < matrixVector[i].rows(); ++row) {
+//            ss << "[";
+//            for (int col = 0; col < matrixVector[i].cols(); ++col) {
+//                //cout << "matrixVector[i](row, col):" << matrixVector[i](row, col) << ", which is"<< (matrixVector[i](row, col) ? "true" : "false") << endl;
+//                ss << (matrixVector[i](row, col) ? "true" : "false");
+//                if (col < matrixVector[i].cols() - 1) {
+//                    ss << ",";
+//                }
+//            }
+//            ss << "]";
+//            if (row < matrixVector[i].rows() - 1) {
+//                ss << ",";
+//            }
+//        }
+//        ss << "]";
+//        if (i < matrixVector.size() - 1) {
+//            ss << ",";
+//        }
+//    }
+//    ss << "]";
+//    string jsonString = ss.str();
+//    return jsonString;
+//}

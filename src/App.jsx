@@ -15,6 +15,7 @@ import pw from "./assets/pw.svg";
 
 function App(){
     const [response,setResponse]=useState("Waiting...")
+    const [responded, setResonded]= useState(false);
     const [bitboard,setBitboard]=useState(-1);
     const [currentBitboard, setCurrentBitboard]=useState(0);
     const [bitboardVisibility,setbitboardVisibility]=useState(true);
@@ -38,20 +39,22 @@ function App(){
             setResponse(JSON.parse(data));
         },"fenArr");
     }, []);
-
     async function fetchDataW(func,dataPoint) {
         try {
             const response = await fetch('http://localhost:8080/'+dataPoint);
             const data = await response.text();
             console.log('Response from C++ server:', JSON.parse(data)); 
             func(data);
+            setResonded(true)
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.log('Error fetching data:', error);
+            setResponse("Failed to fetch board data, trying again...")
+            setTimeout(fetchDataW(func, dataPoint),1000)
         }
     };
     //*Stupid, for some reason it goes bottom to top. Going to go backwards to reverse it.
     let squaresEls=[];
-    if(response!="Waiting..."){
+    if(responded){
         for(let i=0; i<64;i++){
             let y=Math.floor(i/8);
             let x=i%8;

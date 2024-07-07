@@ -6,12 +6,13 @@
 #include "string"
 #include <vector>
 #include <array>
-#include "Eigen/Core"
+//#include "Eigen/Core"
 #include <cctype>
 
 using namespace std;
 
-using Bitboard = Eigen::Matrix<bool, 8, 8>;
+//using Bitboard = Eigen::Matrix<bool, 8, 8>;
+using Bitboard = uint64_t;
 using MoveMag = array<int, 3>;
 
 int* isChecked(char** board, char color);
