@@ -42,34 +42,32 @@ inline void setBitTo(Bitboard* initBB, int posX, int posY, bool value) {
 inline bool getBit(Bitboard bb, int posX, int posY) {
 	return (bb >> posX + (posY * 8)) & 1;
 }
-class PieceTypeBBStorer;
-class ColorPositionBitboards;
-class AllPositionBitboards;
+class PieceTypeCurrPositions;
+class OneColorCurrPositions;
+class AllCurrPositions;
 
-class PieceTypeBBStorer {
+class PieceTypeCurrPositions {
 public:
-	string pieceType;
+	char pieceType;
 	vector<Bitboard> posBB;
 	//Maybe don't calculate this every time? Thus don't include it here. Don't know, may be worse.
 	Bitboard pieceTypeCombinedBB;
 };
 
 
-class ColorPositionBitboards {
+class OneColorCurrPositions {
 public:
-	PieceTypeBBStorer pieceTypes[6];
+	PieceTypeCurrPositions pieceTypes[6];
 	//Maybe don't calculate this every time? Thus don't include it here. Don't know, may be worse.
 	Bitboard colorCombinedBB;
 };
 
 
-class AllPositionBitboards {
+class AllCurrPositions {
 	public:
-		ColorPositionBitboards colorBitboards[2];
+		OneColorCurrPositions colorBitboards[2];
 };
-
-
-AllPositionBitboards fenToPosBitboards(std::string fen);
-char** allPositionBitboardsToMatrix(AllPositionBitboards allPositionBitboardsL);
+AllCurrPositions fenToPosBitboards(std::string fen);
+char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
 
 #endif

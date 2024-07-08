@@ -8,7 +8,7 @@ using namespace std;
 int main() {
     httplib::Server svr;
     string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-    AllPositionBitboards allPositionBitboards = fenToPosBitboards(lFen);
+    AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
     // Handle GET requests
     svr.Get("/data", [allPositionBitboards](const httplib::Request& /*req*/, httplib::Response& res) {
@@ -49,16 +49,16 @@ int main() {
     return 0;
 }
 
-AllPositionBitboards fenToPosBitboards(std::string fen) {
-    ColorPositionBitboards blackBitboard;
-    ColorPositionBitboards whiteBitboard;
-    AllPositionBitboards allPositionBitboards;
+AllCurrPositions fenToPosBitboards(std::string fen) {
+    OneColorCurrPositions blackBitboard;
+    OneColorCurrPositions whiteBitboard;
+    AllCurrPositions allPositionBitboards;
     allPositionBitboards.colorBitboards[0] = blackBitboard;
     allPositionBitboards.colorBitboards[1] = whiteBitboard;
     //Make this just 12 lines, more optimized.
     for (int color = 0; color < 2; color++) {
         for (int i = 0; i < 6; i++) {
-            PieceTypeBBStorer newPiece;
+            PieceTypeCurrPositions newPiece;
             newPiece.pieceType = pieces[i];
             allPositionBitboards.colorBitboards[color].pieceTypes[i] = newPiece; 
         }
@@ -96,7 +96,7 @@ AllPositionBitboards fenToPosBitboards(std::string fen) {
     return allPositionBitboards;
 }
 
-char** allPositionBitboardsToMatrix(AllPositionBitboards allPositionBitboardsL) {
+char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL) {
     char** arr = new char* [8];
     for (int i = 0; i < 8; ++i) {
         arr[i] = new char[8];
