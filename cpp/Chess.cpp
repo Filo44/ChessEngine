@@ -4,24 +4,6 @@
 using namespace std;
 
 
-char** fenToMatrix(std::string fen);
-void delete2DArray(char** arr, int rows);
-string convertToString(char** arr, int cols, int rows);
-string convertToJSArr(char** arr, int cols, int rows);
-string convertVofBBJS(vector<Bitboard> matrixVector);
-//BUG, remove if possible
-vector<int> pieceCoordinates(char piece, char** board);
-
-const char pieces[6] = { 'r','n','b','q', 'k','p' };
-unordered_map<char, int> pieceToNumber = {
-        {'r', 0},
-        {'n', 1},
-        {'b', 2},
-        {'q', 3},
-        {'k', 4},
-        {'p', 5}
-};
-
 
 int main() {
     httplib::Server svr;
@@ -31,16 +13,16 @@ int main() {
     // Handle GET requests
     svr.Get("/data", [allPositionBitboards](const httplib::Request& /*req*/, httplib::Response& res) {
         char** arr = allPositionBitboardsToMatrix(allPositionBitboards);
-        res.set_content(convertToString(arr, 8, 8), "text/plain");
-        res.set_header("Access-Control-Allow-Origin", "*");
-        delete2DArray(arr, 8);
-    });
-    svr.Get("/fenArr", [lFen](const httplib::Request& /*req*/, httplib::Response& res) {
-        char** arr = fenToMatrix(lFen);
         res.set_content(convertToJSArr(arr, 8, 8), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
         delete2DArray(arr, 8);
     });
+    //svr.Get("/fenArr", [lFen](const httplib::Request& /*req*/, httplib::Response& res) {
+    //    char** arr = fenToMatrix(lFen);
+    //    res.set_content(convertToString(arr, 8, 8), "text/plain");
+    //    res.set_header("Access-Control-Allow-Origin", "*");
+    //    delete2DArray(arr, 8);
+    //});
     
     svr.Get("/getBitboards", [lFen](const httplib::Request& /*req*/, httplib::Response& res) {
         //std::vector<Bitboard> DUMMYbitboards;

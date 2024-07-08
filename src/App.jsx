@@ -13,7 +13,7 @@ import qw from "./assets/qw.svg";
 import rw from "./assets/rw.svg";
 import pw from "./assets/pw.svg";
 
-function App(){
+function App(){ 
     const [response,setResponse]=useState("Waiting...")
     const [responded, setResonded]= useState(false);
     const [bitboard,setBitboard]=useState(-1);
@@ -37,7 +37,7 @@ function App(){
         fetchDataW((data)=>{
             // console.log("FIRST TRY BABY!")
             setResponse(JSON.parse(data));
-        },"fenArr");
+        },"data");
     }, []);
     async function fetchDataW(func,dataPoint) {
         try {

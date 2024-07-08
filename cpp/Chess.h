@@ -9,13 +9,23 @@
 #include <cstdint>
 
 
+const char pieces[6] = { 'r','n','b','q', 'k','p' };
+unordered_map<char, int> pieceToNumber = {
+		{'r', 0},
+		{'n', 1},
+		{'b', 2},
+		{'q', 3},
+		{'k', 4},
+		{'p', 5}
+};
+
 //#include "Eigen/Core"
 
 //using Bitboard = Eigen::Matrix<bool, 8, 8>;
 using Bitboard = uint64_t;
 using namespace std;
 
-char** fenToMatrix(std::string fen);
+//char** fenToMatrix(std::string fen);
 void delete2DArray(char** arr, int rows);
 string convertToString(char** arr, int cols, int rows);
 string convertToJSArr(char** arr, int cols, int rows);
