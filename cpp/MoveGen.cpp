@@ -22,6 +22,7 @@ vector<Bitboard> main2() {
 }
 
 
+
 //Change type, and return. 
 int* isChecked(char** board, char color) {
 	int kX = -1;
@@ -34,7 +35,8 @@ int* isChecked(char** board, char color) {
 	return 0;
 }
 
-//
+//YOU DON'T STORE THE BITBOARDS GENEREATED BY THIS FUNCTION
+//This just gives you the moves for the pieces which you will feed into the search algorithm
 array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB) {
 	Bitboard capBitboard;
 	Bitboard moveBitboard;
@@ -51,7 +53,7 @@ array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB) {
 
 	//Inefficient, use magic bitboards later
 
-	//Creating a direction vector of coordinates and magnitudes(Max distance so you don't have to check if you are in bounds)
+	//Creating a vector of directions with coordinates and magnitudes(Max distance so you don't have to check if you are in bounds)
 	vector<MoveMag> dirs;
 	//Will add the directions of the sliding pieces such that I won't have to have it twice, and no function required
 	if (pieceType == 'b' || pieceType == 'q') {
@@ -99,14 +101,14 @@ array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB) {
 		for (MoveMag dir : dirs) {
 			int i = 1;
 			//Plus one because we start at one and therefore since the x is zero indexed we need to go one more
-			//Refer to the beatiful paint document for MATHEMATICAL proof.
+			//Refer to the beautiful paint document for MATHEMATICAL proof.
 			int nX = x;
 			int nY = y;
 			while (i < (dir[2] + 1)) {
 				nX += dir[0];
 				nY += dir[1];
 				//Checks if true, if it is true it means there is a piece of the opposite color and you should ...
-				if (getBit(oppColorBB,nX, nY)) {
+				if (getBit(oppColorBB, nX, nY)) {
 					//Append it to the capture bb
 					setBitTo(&capBitboard, nX, nY, 1);
 					//Break out of the loop
@@ -118,11 +120,13 @@ array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB) {
 			}
 		}
 	}
+	//Else if because if the piece is a knight, the dirs would be empty...
+	// thus using the check before to cut down on the pieces you have to check are knights
 	else if (pieceType == 'n') {
 		cout << "Knight" << endl;
 		// All possible moves of a knight
-		int possX[8] = { 2, 1, -1, -2, -2, -1, 1, 2 };
-		int possY[8] = { 1, 2, 2, 1, -1, -2, -2, -1 };
+		int possX[8] = { 2, 1, -1, -2, -2, -1,  1,  2 };
+		int possY[8] = { 1, 2,  2,  1, -1, -2, -2, -1 };
 		for (int i = 0; i < 8; i++) {
 			cout << "Knight" << i << endl;
 			int nY = y + possY[i];
@@ -131,14 +135,12 @@ array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB) {
 				cout << "In bounds" << i << endl;
 				if (getBit(oppColorBB, nX, nY)) {
 					setBitTo(&capBitboard, nX, nY, 1);
-				}
-				else {
+				} else {
 					setBitTo(&moveBitboard, nX, nY, 1);
 				}
 			}
 		}
-	}
-	else if (pieceType == 'p') {
+	} else if (pieceType == 'p') {
 		//0 indexed btw
 		int startRank;
 		int lastRank;
@@ -147,8 +149,7 @@ array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB) {
 			//Inverted because of how stupid matricies are made in programming languages
 			startRank = 6;
 			lastRank = 0;
-		}
-		else {
+		} else {
 			startRank = 1;
 			lastRank = 7;
 		}
@@ -161,10 +162,10 @@ array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB) {
 		bool notOverY = ((color && y < 7) || (!color && y > 0));
 		if (notOverY && !getBit(oppColorBB, x, y + forwards)) {
 			setBitTo(&moveBitboard, x, y + forwards, 1);
-		}
-		//Checking if it can go forwards twice
-		if (y == startRank && !getBit(oppColorBB, x, y + (forwards * 2))) {
-			setBitTo(&moveBitboard,x, y + (forwards * 2), 1);
+			//Checking if it can go forwards twice
+			if (y == startRank && !getBit(oppColorBB, x, y + (forwards * 2))) {
+				setBitTo(&moveBitboard, x, y + (forwards * 2), 1);
+			}
 		}
 		//Take to the left
 		if (x > 0 && notOverY && getBit(oppColorBB, x - 1, y + forwards)) {
@@ -183,21 +184,6 @@ array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB) {
 	return bitboards;
 }
 
-//Bitboard genAllBitBoards(char** board, char color, bool attacking) {
-//	Bitboard fullBitboard;
-//	fullBitboard = 0;
-//
-//	for (int i = 0; i < 8; i++) {
-//		for (int j = 0; j < 8; j++) {
-//			char piece = board[i][j];
-//			//Checks if piece is a color
-//			if (isupper(piece) == color) {
-//				fullBitboard = genBitboard(piece, j, i, board, ).array() || fullBitboard.array();
-//			}
-//		}
-//	}
-//	return fullBitboard;
-//}
 
 vector<int> pieceCoordinates(char piece, char** board) {
 	vector<int> arr;
@@ -218,19 +204,6 @@ vector<int> pieceCoordinates(char piece, char** board) {
 bool checkBounds(int x, int y) {
 	return (x >= 0 && y >= 0 && x < 8 && y < 8);
 }
-
-//Bitboard genEmptyBitboard() {
-//	Bitboard emptyBB;
-//	emptyBB << false, false, false, false, false, false, false, false,
-//		false, false, false, false, false, false, false, false,
-//		false, false, false, false, false, false, false, false,
-//		false, false, false, false, false, false, false, false,
-//		false, false, false, false, false, false, false, false,
-//		false, false, false, false, false, false, false, false,
-//		false, false, false, false, false, false, false, false,
-//		false, false, false, false, false, false, false, false;
-//	return emptyBB;
-//}
 
 vector<Bitboard> arrayToVector(array<Bitboard, 2> arr) {
 	vector<Bitboard> v;

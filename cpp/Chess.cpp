@@ -12,16 +12,25 @@ string convertVofBBJS(vector<Bitboard> matrixVector);
 //BUG, remove if possible
 vector<int> pieceCoordinates(char piece, char** board);
 
+const char pieces[6] = { 'r','n','b','q', 'k','p' };
+unordered_map<char, int> pieceToNumber = {
+        {'r', 0},
+        {'n', 1},
+        {'b', 2},
+        {'q', 3},
+        {'k', 4},
+        {'p', 5}
+};
 
 
 int main() {
     httplib::Server svr;
-
     string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+    AllPositionBitboards allPositionBitboards = fenToPosBitboards(lFen);
 
     // Handle GET requests
-    svr.Get("/data", [lFen](const httplib::Request& /*req*/, httplib::Response& res) {
-        char** arr = fenToMatrix(lFen);
+    svr.Get("/data", [allPositionBitboards](const httplib::Request& /*req*/, httplib::Response& res) {
+        char** arr = allPositionBitboardsToMatrix(allPositionBitboards);
         res.set_content(convertToString(arr, 8, 8), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
         delete2DArray(arr, 8);
@@ -58,29 +67,24 @@ int main() {
     return 0;
 }
 
-char** fenToMatrix(std::string fen) {
-    char** arr = new char * [8];
-    for (int i = 0; i < 8; ++i) {
-        arr[i] = new char[8];
-    }
-    for (int i = 0; i < 8; ++i) {
-        for (int j = 0; j < 8; ++j) {
-            arr[i][j] = ' ';
+AllPositionBitboards fenToPosBitboards(std::string fen) {
+    ColorPositionBitboards blackBitboard;
+    ColorPositionBitboards whiteBitboard;
+    AllPositionBitboards allPositionBitboards;
+    allPositionBitboards.colorBitboards[0] = blackBitboard;
+    allPositionBitboards.colorBitboards[1] = whiteBitboard;
+    //Make this just 12 lines, more optimized.
+    for (int color = 0; color < 2; color++) {
+        for (int i = 0; i < 6; i++) {
+            PieceTypeBBStorer newPiece;
+            newPiece.pieceType = pieces[i];
+            allPositionBitboards.colorBitboards[color].pieceTypes[i] = newPiece; 
         }
     }
-    //Does this:
-    /*char arr[8][8] = {
-        {'','','','','','','',''},
-        {'','','','','','','',''},
-        {'','','','','','','',''},
-        {'','','','','','','',''},
-        {'','','','','','','',''},
-        {'','','','','','','',''},
-        {'','','','','','','',''},
-        {'','','','','','','',''}
-    };*/
-    
-    
+   
+
+
+
     int actualPos = -1;
     for (int i = 0; i < fen.length(); i++) {
         if (fen[i] == '/') {
@@ -90,22 +94,46 @@ char** fenToMatrix(std::string fen) {
         //std::cout << "actualPos:" << actualPos << std::endl;
         if (isdigit(fen[i])) {
             int currNum = fen[i] - '0';
-            actualPos += currNum-1;
+            actualPos += currNum - 1;
             continue;
-        }else{
+        } else {
             //Else is useless, looks better though. Shush.
             int y = actualPos / 8;
             //Keeps as int therefore rounds down. 
             int x = actualPos % 8;
-            //It's y,x... 
-            arr[y][x] = fen[i];
+            cout << pieceToNumber['r'];
+            //Goes to the correct colour
+            //Goes to the piece type by checking hte piece to number map
+            //then pushes the position BB by making a bit board with one 1 and pushing it to the actualPos
+            allPositionBitboards.colorBitboards[isupper(fen[i])]
+                .pieceTypes[pieceToNumber[tolower(fen[i])]]
+                .posBB.push_back(1ULL << actualPos);
         }
+    }
+
+    return allPositionBitboards;
+}
+
+char** allPositionBitboardsToMatrix(AllPositionBitboards allPositionBitboardsL) {
+    char** arr = new char* [8];
+    for (int i = 0; i < 8; ++i) {
+        arr[i] = new char[8];
     }
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
-            std::cout << arr[i][j] << " ";
+            arr[i][j] = ' ';
         }
-        std::cout << std::endl;
+    }
+    //No clue why each piece stores an entire bitboard when there can only be one bit which is on. Optimize this later.
+    for (int color = 0; color < 2; ++color) {
+        for (int pieceI = 0; pieceI < 6; ++pieceI) {
+            for (const Bitboard bitboard : allPositionBitboardsL.colorBitboards[color].pieceTypes[pieceI].posBB) {
+                //Finds the last, and in this case only, 1
+                int pos = _tzcnt_u64(bitboard);
+                //y, x for arrays
+                arr[pos / 8][pos % 8] = color? toupper(pieces[pieceI]) : pieces[pieceI] ;
+            }
+        }
     }
     return arr;
 }
@@ -182,32 +210,3 @@ string convertVofBBJS(vector<Bitboard> matrixVector) {
     return jsonString;
 }
 
-//string convertVofBBJS(vector<Bitboard> matrixVector) {
-//    //cout << matrixVector[0] << endl;
-//    std::stringstream ss;
-//    ss << "[";
-//    for (size_t i = 0; i < matrixVector.size(); ++i) {
-//        ss << "[";
-//        for (int row = 0; row < matrixVector[i].rows(); ++row) {
-//            ss << "[";
-//            for (int col = 0; col < matrixVector[i].cols(); ++col) {
-//                //cout << "matrixVector[i](row, col):" << matrixVector[i](row, col) << ", which is"<< (matrixVector[i](row, col) ? "true" : "false") << endl;
-//                ss << (matrixVector[i](row, col) ? "true" : "false");
-//                if (col < matrixVector[i].cols() - 1) {
-//                    ss << ",";
-//                }
-//            }
-//            ss << "]";
-//            if (row < matrixVector[i].rows() - 1) {
-//                ss << ",";
-//            }
-//        }
-//        ss << "]";
-//        if (i < matrixVector.size() - 1) {
-//            ss << ",";
-//        }
-//    }
-//    ss << "]";
-//    string jsonString = ss.str();
-//    return jsonString;
-//}

@@ -17,7 +17,7 @@ using MoveMag = array<int, 3>;
 
 int* isChecked(char** board, char color);
 array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB);
-Bitboard genEmptyBitboard();
+//Bitboard genEmptyBitboard();
 //Bitboard genAllBitBoards(char** board, char color,bool attacking);
 bool checkBounds(int x, int y);
 vector<Bitboard> arrayToVector(array<Bitboard, 2> arr);
