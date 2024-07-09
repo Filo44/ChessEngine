@@ -6,38 +6,24 @@
 using namespace std;
 
 
-vector<Bitboard> main2() {
-	
-}
+//vector<Bitboard> main2() {
+//	
+//}
 
 
-
-//Change type, and return. 
-int* isChecked(char** board, char color) {
-	int kX = -1;
-	int kY = -1;
-	//Can optimize king color checking, going to keep it like this for readability
-	vector<int> coordArr = pieceCoordinates((color == 'w' ? 'K' : 'k'), board);
-	kX = coordArr[0];
-	kY = coordArr[1];
-	int bitboard[64] = {};
-	return 0;
-}
 
 //YOU DON'T STORE THE BITBOARDS GENEREATED BY THIS FUNCTION
 //This just gives you the moves for the pieces which you will feed into the search algorithm
 MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor) {
 	Bitboard oppColorPosBB = allCurrPositions.colorBitboards[!currentColor].colorCombinedBB;
 	Bitboard thisColorPosBB = allCurrPositions.colorBitboards[currentColor].colorCombinedBB;
-	Bitboard capBitboard;
-	Bitboard moveBitboard;
+	Bitboard capBitboard = 0;
+	Bitboard moveBitboard = 0;
 	//Stores position(Int) and the ORed bitboard of the Sliding piece's dir 
 	// and the king's opposite which is where the pinned piece can move obviously after being ANDed with that piece's pseudo moves
 	vector<PinnedPieceData> pinnedPieces;
 	MoveCapAndPinnedBBs generatedBitboards;
 
-	capBitboard = 0;
-	moveBitboard = 0;
 	char pieceType = tolower(piece);
 	//White:true, black:false
 	bool color = !(piece == pieceType);
@@ -240,6 +226,23 @@ array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard t
 	res[1] = localCapBitboard;
 }
 
+Bitboard pieceToPieceBitboard(MoveMag dir, int x, int y) {
+	Bitboard localMoveBitboard = 0;
+	int i = 1;
+	//Plus one because we start at one and therefore since the x is zero indexed we need to go one more
+	//Refer to the beautiful paint document for MATHEMATICAL proof.
+	int nX = x;
+	int nY = y;
+	while (i < (dir[2] + 1)) {
+		nX += dir[0];
+		nY += dir[1];
+
+		setBitTo(&localMoveBitboard, nX, nY, 1);
+		i++;
+	}
+	return localMoveBitboard;
+}
+
 array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard kingPseudoMoveBitboard, Bitboard oppColorPseudoAttackBB) {
 	//The oppColorPseudoAttackBB is a bitboard of the move and capture pseudo bitboards(ORed together) of the opposite color
 	//Pseudo because it calculates the king moves without thinking about checks or anything else...
@@ -270,7 +273,7 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitbo
 	int numOfCheck = checkChecksRes.numOfChecks;
 
 	//The bitboard will have two 1s in the case of 2 checkers, or more(If possible). 
-	// Won't matter as it doesn't check the checkerLocation if it has 2 checkers
+	// Won't matter as it doesn't check the checkerLocations if it has 2 checkers
 	vector<Bitboard> checkerLocations = checkChecksRes.checkerLocations;
 	//Set the pieceToNum to something static/use #define
 	//Only one king thus why I accessed the [0] (0th)/(first) element of the vector
@@ -281,7 +284,7 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitbo
 
 
 	//All but king moves:
-	AllPosMoves posMoves = secondPseudoMoves(numOfCheck, pinnedPieces, posMoves);
+	AllPosMoves posMoves = secondPseudoMoves(numOfCheck, pinnedPieces, allPositionBitboards, currentColor, checkChecksRes, kingPos);
 
 	//King Moves:
 	//Not sure if the line below works.
@@ -343,14 +346,29 @@ AttackingAndPinnedBBs firstPseudoMoves(AllCurrPositions allCurrPositions, bool c
 	return res;
 }
 
-AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool currColor) {
+AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool currColor, CheckData checkData, int kingPos) {
 	OneColorCurrPositions everyPieceColor = allCurrPositions.colorBitboards[currColor];
 	AllPosMoves allMovesBitboard;
 
+	vector<Bitboard> checkerLocations = checkData.checkerLocations;
+	int numOfChecks = checkData.numOfChecks;
+	
+	//It uses the first checker as if there are more than one, it wont use these variables
+	int firstCheckerPos = _tzcnt_u64(checkerLocations[0]);
+	//Distances must be ints so I can do the max,min limiting.
+	int xDist = (firstCheckerPos % 8) - (kingPos % 8);
+	int xInc = min(max(xDist, -1), 1);
+
+	int yDist = (firstCheckerPos / 8) - (kingPos / 8);
+	int yInc = min(max(yDist, -1), 1);
+	
+	int squareDist = max(xDist, yDist);
+	Bitboard checkerToKingBB = pieceToPieceBitboard({yInc, xInc, squareDist}, kingPos%8, kingPos/8);
+
 	if (numOfCheck == 1) {
 		//Generate the checker to king bitboard
-		Bitboard checkerLocation;
-		Bitboard checkerToKingBB;
+		//CheckData checkCheckRes = checkChecks
+		
 	}
 	//Everypiece is of the class PieceTypeCurrPositions
 	
@@ -376,7 +394,7 @@ AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPiec
 				localMoveBitboard |= (moveGeneratedBitboard & checkerToKingBB);
 				//Since it is check, it cannot possibly capture something to block the check except the attacker
 				//capBitboard |= (generatedBitboards[1] & checkerToKingBB);
-				localCapBitboard |= (checkerLocation & capGeneratedBitboard);
+				localCapBitboard |= (checkerLocations[0] & capGeneratedBitboard);
 			} else {
 				localMoveBitboard |= moveGeneratedBitboard;
 				localCapBitboard |= capGeneratedBitboard;
@@ -497,7 +515,7 @@ bool checkBounds(int x, int y) {
 }
 
 vector<Bitboard> arrayToVector(array<Bitboard, 2> arr) {
-	vector<Bitboard> v;
+	vector<Bitboard> v = {};
 
 	for (int i = 0; i < 2; i++) {
 		v.push_back(arr[i]);

@@ -15,15 +15,15 @@ using namespace std;
 using Bitboard = uint64_t;
 using MoveMag = array<int, 3>;
 
-vector<Bitboard> main2();
-int* isChecked(char** board, char color);
+//vector<Bitboard> main2();
 MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor);
 array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard thisColorPosBB, int x, int y);
 array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard kingPseudoMoveBitboard, Bitboard oppColorPseudoAttackBB);
 AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitboards);
-AttackingAndPinnedBBs firstPseudoMoves(OneColorCurrPositions everyPieceColor);
-AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool currColor);
+AttackingAndPinnedBBs firstPseudoMoves(AllCurrPositions allCurrPositions, bool currColor);
+AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool currColor, CheckData checkData, int kingPos);
 MoveMag kingOppDir(MoveMag dir, int kingPos);
+CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor);
 
 void calcCombinedPos(AllCurrPositions& allCurrPositions);
 void calcCombinedMoves(AllPosMoves& posMoves);
@@ -49,6 +49,7 @@ public:
 	//Maybe don't calculate this every time? Thus don't include it here. Don't know, may be worse.
 	Bitboard pieceTypeCombinedCapBB;
 	Bitboard pieceTypeCombinedMoveBB;
+
 };
 
 
@@ -86,9 +87,5 @@ public:
 	int numOfChecks;
 	vector<Bitboard> checkerLocations;
 };
-
-AttackingAndPinnedBBs firstPseudoMoves(OneColorCurrPositions everyPieceColor);
-AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, OneColorCurrPositions everyPieceColor);
-CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor);
 
 #endif

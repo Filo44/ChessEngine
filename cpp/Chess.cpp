@@ -10,6 +10,8 @@ int main() {
     string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
+    fullMoveGenLoop(1, allPositionBitboards);
+
     // Handle GET requests
     svr.Get("/data", [allPositionBitboards](const httplib::Request& /*req*/, httplib::Response& res) {
         char** arr = allPositionBitboardsToMatrix(allPositionBitboards);
