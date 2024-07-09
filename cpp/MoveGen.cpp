@@ -1,14 +1,21 @@
-#include "Global.h"
-#include "MoveGen.h"
 #include "Chess.h"
-
+#include "MoveGen.h"
+#include "Classes.h"
+#include <bitset>
 
 using namespace std;
-
 
 //vector<Bitboard> main2() {
 //	
 //}
+unordered_map<char, int> pieceToNumber = {
+		{'r', 0},
+		{'n', 1},
+		{'b', 2},
+		{'q', 3},
+		{'k', 4},
+		{'p', 5}
+};
 
 
 
@@ -78,29 +85,30 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 	}
 	//Finishing the sliding pieces
 	if (!dirs.empty()) {
-		
+		bool kingExists = (allCurrPositions.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB.size()) != 0;
 		for (MoveMag dir : dirs) {
 			array<Bitboard, 2> res = dirToBitboard(dir, oppColorPosBB, thisColorPosBB, x, y);
 			Bitboard localMoveBitboard = res[0];
 			Bitboard localCapBitboard = res[1];
+			if (kingExists) {
+				//GenKingOppDir gens only capture bitboard
+				Bitboard kingPosBB = allCurrPositions.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB[0];
+				int kingPos = _tzcnt_u64(kingPosBB);
+				array<Bitboard, 2> kingOppBBs = dirToBitboard(kingOppDir(dir, kingPos), oppColorPosBB, thisColorPosBB, kingPos%8,kingPos/8);
 
-			//GenKingOppDir gens only capture bitboard
-			Bitboard kingPosBB = allCurrPositions.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB[0];
-			int kingPos = _tzcnt_u64(kingPosBB);
-			array<Bitboard, 2> kingOppBBs = dirToBitboard(kingOppDir(dir, kingPos), oppColorPosBB, thisColorPosBB, kingPos%8,kingPos/8);
+				Bitboard kingMoveBitboard = kingOppBBs[0];
+				Bitboard kingCapBitboard = kingOppBBs[1];
+				//The pinned piece can go in the kings opp dir, the piece's dir and the piece itself.
+				Bitboard pinnedMoveMask = kingMoveBitboard| localMoveBitboard | (1ULL << (x+(y*8)));
+				//A piece is pinned if it is in the king's capture bitboard, the piece's capture bitboard
+				Bitboard pinnedPieceBB = ((kingCapBitboard & localCapBitboard) & oppColorPosBB);
 
-			Bitboard kingMoveBitboard = kingOppBBs[0];
-			Bitboard kingCapBitboard = kingOppBBs[1];
-			//The pinned piece can go in the kings opp dir, the piece's dir and the piece itself.
-			Bitboard pinnedMoveMask = kingMoveBitboard| localMoveBitboard | (1ULL << (x+(y*8)));
-			//A piece is pinned if it is in the king's capture bitboard, the piece's capture bitboard
-			Bitboard pinnedPieceBB = ((kingCapBitboard & localCapBitboard) & oppColorPosBB);
-
-			if ( pinnedPieceBB != 0 ) {
-				PinnedPieceData pinnedPiece;
-				pinnedPiece.pos = _tzcnt_u64(pinnedPieceBB);
-				pinnedPiece.posMoveMask = pinnedMoveMask;
-				pinnedPieces.push_back(pinnedPiece);
+				if ( pinnedPieceBB != 0 ) {
+					PinnedPieceData pinnedPiece;
+					pinnedPiece.pos = _tzcnt_u64(pinnedPieceBB);
+					pinnedPiece.posMoveMask = pinnedMoveMask;
+					pinnedPieces.push_back(pinnedPiece);
+				}
 			}
 			
 			moveBitboard |= localMoveBitboard;
@@ -224,6 +232,7 @@ array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard t
 	array<Bitboard, 2> res;
 	res[0] = localMoveBitboard;
 	res[1] = localCapBitboard;
+	return res;
 }
 
 Bitboard pieceToPieceBitboard(MoveMag dir, int x, int y) {
@@ -261,14 +270,20 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitbo
 	//	posMoves.pieceTypes[i] = newPiece;
 	//}
 
-	OneColorCurrPositions oppColorCurrPosWithoutKing = allPositionBitboards.colorBitboards[!currentColor];
 
 	//Optimize this:
-	oppColorCurrPosWithoutKing.pieceTypes[pieceToNumber['k']].posBB = {};
-	AttackingAndPinnedBBs attackingAndPinned = firstPseudoMoves(oppColorCurrPosWithoutKing);
+	AllCurrPositions allPositionBitboardsMinusKing = allPositionBitboards;
+	allPositionBitboardsMinusKing.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB = {};
+	//Pass down currentColor, not its inverse as the function inverts it;
+	AttackingAndPinnedBBs attackingAndPinned = firstPseudoMoves(allPositionBitboardsMinusKing, currentColor);
 	Bitboard oppAttacking = attackingAndPinned.attacking;
 	vector<PinnedPieceData> pinnedPieces = attackingAndPinned.pinnedPieces;
 
+	int kingExists = (allPositionBitboards.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB.size());
+	cout << "AmKings:" << kingExists;
+	bitset<64> binary = allPositionBitboards.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB[0];
+	cout << binary;
+	//KING IN TWO PLACES, DEBUG AFTER SLEEP :)
 	CheckData checkChecksRes = checkChecks(allPositionBitboards, currentColor);
 	int numOfCheck = checkChecksRes.numOfChecks;
 
@@ -295,11 +310,11 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitbo
 	kingMoves.capBitboard = legalKingMoves[1];
 	kingMoves.posBitboard = kingPosBB;
 	posMoves.pieceTypes[pieceToNumber['k']].posBB = { kingMoves };
-	
+	return posMoves;
  }
 
 AttackingAndPinnedBBs firstPseudoMoves(AllCurrPositions allCurrPositions, bool currColor) {
-	OneColorCurrPositions everyPieceColor = allCurrPositions.colorBitboards[currColor];
+	OneColorCurrPositions everyPieceColor = allCurrPositions.colorBitboards[!currColor];
 	vector<PinnedPieceData> pinnedPieces;
 	vector<SinglePiecePosMoves> allBitboards;
 

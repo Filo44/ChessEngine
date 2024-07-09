@@ -1,5 +1,6 @@
 #include "Chess.h"
 #include "MoveGen.h"
+#include "Classes.h"
 
 using namespace std;
 
@@ -10,7 +11,7 @@ int main() {
     string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
-    fullMoveGenLoop(1, allPositionBitboards);
+    AllPosMoves posMoves = fullMoveGenLoop(1, allPositionBitboards);
 
     // Handle GET requests
     svr.Get("/data", [allPositionBitboards](const httplib::Request& /*req*/, httplib::Response& res) {
@@ -26,7 +27,7 @@ int main() {
     //    delete2DArray(arr, 8);
     //});
     
-    svr.Get("/getBitboards", [lFen](const httplib::Request& /*req*/, httplib::Response& res) {
+    svr.Get("/getBitboards", [posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
         //std::vector<Bitboard> DUMMYbitboards;
         ////DUMMY BITBOARDS TO TEST FRONT END
         ////REPLACE
@@ -41,7 +42,7 @@ int main() {
         ////randomBB(3, 0) = true;
         //DUMMYbitboards.push_back(randomBB);
         //DUMMYbitboards.push_back(randomBB2);
-        res.set_content(convertVofBBJS(main2()), "text/plain");
+        res.set_content(convertVofBBJS(posMoves.pieceTypes[pieceToNumber['n']].fetchBitboards(true)), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 
