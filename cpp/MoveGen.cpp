@@ -5,20 +5,9 @@
 
 using namespace std;
 
-vector<int> pieceCoordinates(char piece, char** board);
-//REMEMBER TO INITIALIZE THIS IN THE CHESS.CPP FILE IF YOU CAN'T FIX THE BUG
 
 vector<Bitboard> main2() {
-	Bitboard existanceBB = 0;
-	setBitTo(&existanceBB, 2, 2, 1);
-	int x = 3;
-	int y = 3;
-	vector<Bitboard> tester = arrayToVector(genBitboard('P', x, y, existanceBB));
-	Bitboard position = 0;
-	setBitTo(&position, x, y, 1);
-	tester.push_back(position);
-	cout << convertVofBBJS(tester) << endl;
-	return tester;
+	
 }
 
 
@@ -37,13 +26,15 @@ int* isChecked(char** board, char color) {
 
 //YOU DON'T STORE THE BITBOARDS GENEREATED BY THIS FUNCTION
 //This just gives you the moves for the pieces which you will feed into the search algorithm
-array<Bitboard, 3> genBitboard(char piece, int x, int y, Bitboard oppColorPosBB, bool pseudo, int kingPos) {
+MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor) {
+	Bitboard oppColorPosBB = allCurrPositions.colorBitboards[!currentColor].colorCombinedBB;
+	Bitboard thisColorPosBB = allCurrPositions.colorBitboards[currentColor].colorCombinedBB;
 	Bitboard capBitboard;
 	Bitboard moveBitboard;
 	//Stores position(Int) and the ORed bitboard of the Sliding piece's dir 
 	// and the king's opposite which is where the pinned piece can move obviously after being ANDed with that piece's pseudo moves
-	vector<PinnedPieceData> pinnedPiecesPositions;
-	array<Bitboard, 3> bitboards;
+	vector<PinnedPieceData> pinnedPieces;
+	MoveCapAndPinnedBBs generatedBitboards;
 
 	capBitboard = 0;
 	moveBitboard = 0;
@@ -103,31 +94,31 @@ array<Bitboard, 3> genBitboard(char piece, int x, int y, Bitboard oppColorPosBB,
 	if (!dirs.empty()) {
 		
 		for (MoveMag dir : dirs) {
-			Bitboard localCapBitboard=0;
-			Bitboard localMoveBitboard=0;
-			int i = 1;
-			//Plus one because we start at one and therefore since the x is zero indexed we need to go one more
-			//Refer to the beautiful paint document for MATHEMATICAL proof.
-			int nX = x;
-			int nY = y;
-			while (i < (dir[2] + 1)) {
-				nX += dir[0];
-				nY += dir[1];
-				//Checks if true, if it is true it means there is a piece of the opposite color and you should ...
-				if (getBit(oppColorPosBB, nX, nY)) {
-					//Append it to the capture bb
-					setBitTo(&localCapBitboard, nX, nY, 1);
-					//Break out of the loop
-					break;
-				}
-				//No need for an else statment as it breaks if it is true
-				setBitTo(&localMoveBitboard, nX, nY, 1);
-				i++;
-			}
-			//GenKingOppDir gens only capture bitboard
-			if (_tzcnt_u64( (genKingOppDir(dir) & localCapBitboard) & oppColorPosBB) == somethingthatindicatesnosigbit) {
+			array<Bitboard, 2> res = dirToBitboard(dir, oppColorPosBB, thisColorPosBB, x, y);
+			Bitboard localMoveBitboard = res[0];
+			Bitboard localCapBitboard = res[1];
 
+			//GenKingOppDir gens only capture bitboard
+			Bitboard kingPosBB = allCurrPositions.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB[0];
+			int kingPos = _tzcnt_u64(kingPosBB);
+			array<Bitboard, 2> kingOppBBs = dirToBitboard(kingOppDir(dir, kingPos), oppColorPosBB, thisColorPosBB, kingPos%8,kingPos/8);
+
+			Bitboard kingMoveBitboard = kingOppBBs[0];
+			Bitboard kingCapBitboard = kingOppBBs[1];
+			//The pinned piece can go in the kings opp dir, the piece's dir and the piece itself.
+			Bitboard pinnedMoveMask = kingMoveBitboard| localMoveBitboard | (1ULL << (x+(y*8)));
+			//A piece is pinned if it is in the king's capture bitboard, the piece's capture bitboard
+			Bitboard pinnedPieceBB = ((kingCapBitboard & localCapBitboard) & oppColorPosBB);
+
+			if ( pinnedPieceBB != 0 ) {
+				PinnedPieceData pinnedPiece;
+				pinnedPiece.pos = _tzcnt_u64(pinnedPieceBB);
+				pinnedPiece.posMoveMask = pinnedMoveMask;
+				pinnedPieces.push_back(pinnedPiece);
 			}
+			
+			moveBitboard |= localMoveBitboard;
+			capBitboard |= localCapBitboard;
 		}
 	}
 	//Else if because if the piece is a knight, the dirs would be empty...
@@ -214,86 +205,127 @@ array<Bitboard, 3> genBitboard(char piece, int x, int y, Bitboard oppColorPosBB,
 	
 
 	//RETURN BOTH BITBOARDS
-	bitboards[0] = moveBitboard;
-	bitboards[1] = capBitboard;
-	bitboards[2] = pinnedPiecesPositions;
-	return bitboards;
+	generatedBitboards.moveBitboard = moveBitboard;
+	generatedBitboards.capBitboard = capBitboard;
+	generatedBitboards.pinnedPieces = pinnedPieces;
+	return generatedBitboards;
 }
 
-array<Bitboard, 2> genKingLegalMoves(int x, int y, Bitboard oppColorPosBB, Bitboard oppColorPseudoAttackBB) {
+array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard thisColorPosBB, int x, int y) {
+	Bitboard localCapBitboard = 0;
+	Bitboard localMoveBitboard = 0;
+	int i = 1;
+	//Plus one because we start at one and therefore since the x is zero indexed we need to go one more
+	//Refer to the beautiful paint document for MATHEMATICAL proof.
+	int nX = x;
+	int nY = y;
+	while (i < (dir[2] + 1)) {
+		nX += dir[0];
+		nY += dir[1];
+		//Checks if true, if it is true it means there is a piece of the opposite color and you should ...
+		if (getBit(oppColorPosBB, nX, nY)) {
+			//Append it to the capture bb
+			setBitTo(&localCapBitboard, nX, nY, 1);
+			//Break out of the loop
+			break;
+		} else if (getBit(thisColorPosBB, nX, nY)) {
+			break;
+		}
+		//No need for an else statment as it breaks if it is true
+		setBitTo(&localMoveBitboard, nX, nY, 1);
+		i++;
+	}
+	array<Bitboard, 2> res;
+	res[0] = localMoveBitboard;
+	res[1] = localCapBitboard;
+}
+
+array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard kingPseudoMoveBitboard, Bitboard oppColorPseudoAttackBB) {
 	//The oppColorPseudoAttackBB is a bitboard of the move and capture pseudo bitboards(ORed together) of the opposite color
 	//Pseudo because it calculates the king moves without thinking about checks or anything else...
 	//such that I can actually generate the actual king moves of the opposite-colored king
-
+	Bitboard kingCapBitboard = kingPseudoCapBitboard & ~oppColorPseudoAttackBB;
+	Bitboard kingMoveBitboard = kingPseudoMoveBitboard & ~oppColorPseudoAttackBB;
+	return { kingCapBitboard, kingMoveBitboard };
 }
 
 AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitboards) {
-	AllPosMoves posMoves;
-	for (int i = 0; i < 6; i++) {
-		PieceTypePosMoves newPiece;
-		newPiece.pieceType = pieces[i];
-		posMoves.pieceTypes[i] = newPiece;
-	}
+	calcCombinedPos(allPositionBitboards);
+	//AllPosMoves posMoves;
+	//for (int i = 0; i < 6; i++) {
+	//	PieceTypePosMoves newPiece;
+	//	newPiece.pieceType = pieces[i];
+	//	posMoves.pieceTypes[i] = newPiece;
+	//}
 
-	
-	firstPseudoMoves(allPositionBitboards.colorBitboards[!currentColor]);
+	OneColorCurrPositions oppColorCurrPosWithoutKing = allPositionBitboards.colorBitboards[!currentColor];
 
-	CheckData checkChecksRes = checkChecks();
+	//Optimize this:
+	oppColorCurrPosWithoutKing.pieceTypes[pieceToNumber['k']].posBB = {};
+	AttackingAndPinnedBBs attackingAndPinned = firstPseudoMoves(oppColorCurrPosWithoutKing);
+	Bitboard oppAttacking = attackingAndPinned.attacking;
+	vector<PinnedPieceData> pinnedPieces = attackingAndPinned.pinnedPieces;
+
+	CheckData checkChecksRes = checkChecks(allPositionBitboards, currentColor);
 	int numOfCheck = checkChecksRes.numOfChecks;
 
 	//The bitboard will have two 1s in the case of 2 checkers, or more(If possible). 
 	// Won't matter as it doesn't check the checkerLocation if it has 2 checkers
-	Bitboard checkerLocation = checkChecksRes.checkerLocation;
+	vector<Bitboard> checkerLocations = checkChecksRes.checkerLocations;
 	//Set the pieceToNum to something static/use #define
 	//Only one king thus why I accessed the [0] (0th)/(first) element of the vector
 	Bitboard kingPosBB = allPositionBitboards.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB[0];
 	int kingPos = _tzcnt_u64(kingPosBB);
-	if (numOfCheck == 2) {
-		//passing down kingPos is useless but I think it will return an error if I just don't feed anything of the right type in.
-		array<Bitboard,2> legalKingMoves = genBitboard('k', kingPos%8, kingPos/8, allPositionBitboards.colorBitboards[currentColor].colorCombinedBB, kingPos);
-		SinglePiecePosMoves kingMoves;
-		kingMoves.moveBitboard = legalKingMoves[0];
-		kingMoves.capBitboard = legalKingMoves[1];
-		kingMoves.posBitboard = kingPosBB;
-		posMoves.pieceTypes[pieceToNumber['k']].posBB.push_back( kingMoves);
-	} else {
-		
-	}
+	//No if check for 2 checks because you have to gen the king moves anyways
 
+
+
+	//All but king moves:
+	AllPosMoves posMoves = secondPseudoMoves(numOfCheck, pinnedPieces, posMoves);
+
+	//King Moves:
+	//Not sure if the line below works.
+	MoveCapAndPinnedBBs pseudoLegalKingMoves = genBitboard(currentColor?'K' : 'k', kingPos % 8, kingPos / 8, allPositionBitboards, true, currentColor);
+	array<Bitboard, 2> legalKingMoves = genKingLegalMoves(pseudoLegalKingMoves.capBitboard, pseudoLegalKingMoves.moveBitboard, oppAttacking);
+	SinglePiecePosMoves kingMoves;
+	kingMoves.moveBitboard = legalKingMoves[0];
+	kingMoves.capBitboard = legalKingMoves[1];
+	kingMoves.posBitboard = kingPosBB;
+	posMoves.pieceTypes[pieceToNumber['k']].posBB = { kingMoves };
 	
  }
 
-AttackingAndPinnedBBs firstPseudoMoves(OneColorCurrPositions everyPieceColor) {
-	newClassWhichStoresCapandMoveBBAndposBB EveryPieceBitboards;
+AttackingAndPinnedBBs firstPseudoMoves(AllCurrPositions allCurrPositions, bool currColor) {
+	OneColorCurrPositions everyPieceColor = allCurrPositions.colorBitboards[currColor];
 	vector<PinnedPieceData> pinnedPieces;
-	if (numOfCheck == 1) {
-		//Generate the checker to king bitboard
-		Bitboard checkerToKingBB;
-	}
+	vector<SinglePiecePosMoves> allBitboards;
+
 	//Everypiece is of the class PieceTypeCurrPositions
 	for (PieceTypeCurrPositions everyPiece : everyPieceColor.pieceTypes) {
 		for (Bitboard piece : everyPiece.posBB) {
 			Bitboard localCapBitboard = 0;
 			Bitboard localMoveBitboard = 0;
-			array<Bitboard, 3> generatedBitboards = genBitboard(piece);
+
+			int piecePos = _tzcnt_u64(piece);
+			MoveCapAndPinnedBBs generatedBitboards = genBitboard(!currColor ? toupper(everyPiece.pieceType) : tolower(everyPiece.pieceType), piecePos % 8, piecePos / 8, allCurrPositions, true, currColor);
+
+			vector<PinnedPieceData> pinnedPiecesGened = generatedBitboards.pinnedPieces;
+			Bitboard moveGeneratedBitboard = generatedBitboards.moveBitboard;
+			Bitboard capGeneratedBitboard = generatedBitboards.capBitboard;
+
 			//pinnedPieces are of the opposite colour
-			for (PinnedPieceData pinnedPiece : generatedBitboards[2]) {
+			for (PinnedPieceData pinnedPiece : pinnedPiecesGened) {
 						pinnedPieces.push_back(pinnedPiece);
 			}
-			if (numOfCheck == 1) {
-				localMoveBitboard |= (generatedBitboards[0] & checkerToKingBB);
-				//Since it is check, it cannot possibly capture something to block the check except the attacker
-				//capBitboard |= (generatedBitboards[1] & checkerToKingBB);
-				localCapBitboard |= (checkerLocation & generatedBitboards[1]);
-			} else {
-				localMoveBitboard |= generatedBitboards[0];
-				localCapBitboard |= generatedBitboards[1];
-			}
-			ChildClassOfnewClassWhichStoresCapandMoveBBAndposBB singleBitboards;
+			
+			localMoveBitboard |= moveGeneratedBitboard;
+			localCapBitboard |= capGeneratedBitboard;
+
+			SinglePiecePosMoves singleBitboards;
 			singleBitboards.moveBitboard = localMoveBitboard;
 			singleBitboards.capBitboard = localCapBitboard;
 			singleBitboards.posBitboard = piece;
-			EveryPieceBitboards.push_back(singleBitboards);
+			allBitboards.push_back(singleBitboards);
 		}
 
 	}
@@ -301,21 +333,23 @@ AttackingAndPinnedBBs firstPseudoMoves(OneColorCurrPositions everyPieceColor) {
 	//We add the cap & move bitboards with each of their own kind and then themselves because we only care where they are "Attacking"
 	// Because we are removing where they are attacking from the king's pseudo moves to get the legal moves
 	Bitboard runningAttackingBitboard = 0;
-	for (ChildClassOfnewClassWhichStoresCapandMoveBBAndposBB singleBitboards : EveryPieceBitboards) {
+	for (SinglePiecePosMoves singleBitboards : allBitboards) {
 		runningAttackingBitboard |= singleBitboards.moveBitboard;
 		runningAttackingBitboard |= singleBitboards.capBitboard;
 	}
 	AttackingAndPinnedBBs res;
-	res.attackingBitboard = runningAttackingBitboard;
+	res.attacking = runningAttackingBitboard;
 	res.pinnedPieces = pinnedPieces;
 	return res;
 }
 
-MoveCapAndPinnedBBs secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, bool currColor, OneColorCurrPositions everyPieceColor) {
-	//newClassWhichStoresCapandMoveBBAndposBB EveryPieceBitboards;
+AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool currColor) {
+	OneColorCurrPositions everyPieceColor = allCurrPositions.colorBitboards[currColor];
 	AllPosMoves allMovesBitboard;
+
 	if (numOfCheck == 1) {
 		//Generate the checker to king bitboard
+		Bitboard checkerLocation;
 		Bitboard checkerToKingBB;
 	}
 	//Everypiece is of the class PieceTypeCurrPositions
@@ -325,27 +359,35 @@ MoveCapAndPinnedBBs secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pi
 		PieceTypePosMoves pieceTypeMoveBBStorer;
 		pieceTypeMoveBBStorer.pieceType = everyPiece.pieceType;
 		allMovesBitboard.pieceTypes[i]=pieceTypeMoveBBStorer;
+		if (i == pieceToNumber['k']) {
+			//If it is a king, let it initialise the pieceType, because then the code in the other function just adds this king to its type.
+			continue;
+		}
 		for (Bitboard piece : everyPiece.posBB) {
 			Bitboard localCapBitboard = 0;
 			Bitboard localMoveBitboard = 0;
-			array<Bitboard, 3> generatedBitboards = genBitboard(piece);
+			int piecePos = _tzcnt_u64(piece);
+			
+			MoveCapAndPinnedBBs generatedBitboards = genBitboard(currColor ? toupper(everyPiece.pieceType) : tolower(everyPiece.pieceType), piecePos % 8, piecePos / 8, allCurrPositions, true,currColor);
+			Bitboard moveGeneratedBitboard = generatedBitboards.moveBitboard;
+			Bitboard capGeneratedBitboard = generatedBitboards.capBitboard;
 
 			if (numOfCheck == 1) {
-				localMoveBitboard |= (generatedBitboards[0] & checkerToKingBB);
+				localMoveBitboard |= (moveGeneratedBitboard & checkerToKingBB);
 				//Since it is check, it cannot possibly capture something to block the check except the attacker
 				//capBitboard |= (generatedBitboards[1] & checkerToKingBB);
-				localCapBitboard |= (checkerLocation & generatedBitboards[1]);
+				localCapBitboard |= (checkerLocation & capGeneratedBitboard);
 			} else {
-				localMoveBitboard |= generatedBitboards[0];
-				localCapBitboard |= generatedBitboards[1];
+				localMoveBitboard |= moveGeneratedBitboard;
+				localCapBitboard |= capGeneratedBitboard;
 			}
 
 			//Might be dangerous deleting elements while looping even when going backwards
 			for (int i = pinnedPieces.size() - 1; i >= 0; i--) {
 				PinnedPieceData pinnedPieceInstance = pinnedPieces[i];
-				if (getBit(piece, pinnedPieceInstance.posX, pinnedPieceInstance.posY)) {
-					localMoveBitboard &= pinnedPieceInstance.pinnedBitboard;
-					localCapBitboard &= pinnedPieceInstance.pinnedBitboard;
+				if (getBit(piece, pinnedPieceInstance.pos%8, pinnedPieceInstance.pos/8)) {
+					localMoveBitboard &= pinnedPieceInstance.posMoveMask;
+					localCapBitboard &= pinnedPieceInstance.posMoveMask;
 					pinnedPieces.erase(pinnedPieces.begin() + i);
 				}
 			}
@@ -356,27 +398,99 @@ MoveCapAndPinnedBBs secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pi
 			allMovesBitboard.pieceTypes[ pieceToNumber[ everyPiece.pieceType ] ].posBB.push_back(singlePieceMoveBBs);
 		}
 	}
-	
+	return allMovesBitboard;
 }
 
+MoveMag kingOppDir(MoveMag dir, int kingPos) {
+	int kingX = kingPos % 8;
+	int kingY = kingPos / 8; 
+	//Not sure if this is correct, check
+	return { dir[0] * -1, dir[1] * -1, dir[2] - max(kingX,kingY)};
+}
 
-
-
-vector<int> pieceCoordinates(char piece, char** board) {
-	vector<int> arr;
-	for (int i = 0; i < 8; i++) {
-		for (int j = 0; j < 8; j++) {
-			if (board[i][j] == piece) {
-				arr.push_back(i);
-				arr.push_back(j);
-			}
+CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor) {
+	CheckData res;
+	int& numOfChecks = res.numOfChecks;
+	vector<Bitboard>& checkerLocations = res.checkerLocations;
+	//Can remove this line of code and just modify the allcurrpositions param. Optimize. Not really anymore as I use the param to get the original vector of bbs, can change this though.
+	AllCurrPositions kingMorphedPositions = allCurrPositions;
+	//Loops over all types of pieces, (not all pieces on the board as the name of the variable might suggest)
+	for (char pieceType : pieces) {
+		if (pieceType == 'k') {
+			continue;
 		}
-		if (arr[0] != -1) {
-			break;
+		//Optimize:
+		Bitboard kingPosBB = kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB[0];
+		int kingPos = _tzcnt_u64(kingPosBB);
+
+		kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB = {};
+		kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber[pieceType]].posBB.push_back(kingPosBB);
+		
+		MoveCapAndPinnedBBs gennedBitboards = genBitboard('k', kingPos % 8, kingPos / 8, kingMorphedPositions, true, currColor);
+		Bitboard gennedCapBitboard = gennedBitboards.capBitboard;
+		Bitboard checkersBB = gennedBitboards.capBitboard & allCurrPositions.colorBitboards[currColor].pieceTypes[pieceToNumber[pieceType]].pieceTypeCombinedBB;
+
+		//Pretty sure you don't need to add the checkers if you have at least 2 as if you do you can only move your king thus making their position useless.
+		//Might be wrong.
+		while (checkersBB != 0 || numOfChecks!=2) {
+			numOfChecks++;
+			int checkerCurrPosition = _tzcnt_u64(checkersBB);
+			checkerLocations.push_back(1ULL << checkerCurrPosition);
+			setBitTo(&checkersBB, checkerCurrPosition % 8, checkerCurrPosition / 8, 0);
 		}
 	}
-	return arr;
+	//numOfChecks and checkerLocations are references thus I can just return res.
+	return res;
 }
+
+void calcCombinedPos(AllCurrPositions& allCurrPositions) {
+	for (int color=0; color < 2; color++) {
+		Bitboard colorCombinedBitboard = 0;
+		for (int i=0; i < 6; i++) {
+			Bitboard pieceTypeCombinedBitboard = 0;
+			for (Bitboard positionBitboard : allCurrPositions.colorBitboards[color].pieceTypes[i].posBB) {
+				pieceTypeCombinedBitboard |= positionBitboard;
+			}
+			allCurrPositions.colorBitboards[color].pieceTypes[i].pieceTypeCombinedBB = pieceTypeCombinedBitboard;
+			colorCombinedBitboard |= pieceTypeCombinedBitboard;
+		}
+		allCurrPositions.colorBitboards[color].colorCombinedBB = colorCombinedBitboard;
+	}
+}
+void calcCombinedMoves(AllPosMoves& posMoves) {
+	Bitboard allCapBitboard = 0;
+	Bitboard allMoveBitboard = 0;
+	for (int i = 0; i < 6; i++) {
+		Bitboard combinedCapBitboard = 0;
+		Bitboard combinedMoveBitboard = 0;
+		for (SinglePiecePosMoves piecePosMovesData : posMoves.pieceTypes[i].posBB) {
+			combinedCapBitboard |= piecePosMovesData.capBitboard;
+			combinedMoveBitboard |= piecePosMovesData.moveBitboard;
+		}
+		posMoves.pieceTypes[i].pieceTypeCombinedCapBB = combinedCapBitboard;
+		posMoves.pieceTypes[i].pieceTypeCombinedMoveBB = combinedMoveBitboard;
+		allCapBitboard |= combinedCapBitboard;
+		allMoveBitboard |= combinedMoveBitboard;
+	}
+	posMoves.combinedCapBB = allCapBitboard;
+	posMoves.combinedMoveBB = allMoveBitboard;
+}
+
+//vector<int> pieceCoordinates(char piece, char** board) {
+//	vector<int> arr;
+//	for (int i = 0; i < 8; i++) {
+//		for (int j = 0; j < 8; j++) {
+//			if (board[i][j] == piece) {
+//				arr.push_back(i);
+//				arr.push_back(j);
+//			}
+//		}
+//		if (arr[0] != -1) {
+//			break;
+//		}
+//	}
+//	return arr;
+//}
 
 bool checkBounds(int x, int y) {
 	return (x >= 0 && y >= 0 && x < 8 && y < 8);

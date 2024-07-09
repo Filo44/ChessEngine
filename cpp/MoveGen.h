@@ -15,13 +15,21 @@ using namespace std;
 using Bitboard = uint64_t;
 using MoveMag = array<int, 3>;
 
+vector<Bitboard> main2();
 int* isChecked(char** board, char color);
-array<Bitboard, 2> genBitboard(char piece, int x, int y, Bitboard oppColorBB);
-//Bitboard genEmptyBitboard();
-//Bitboard genAllBitBoards(char** board, char color,bool attacking);
+MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor);
+array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard thisColorPosBB, int x, int y);
+array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard kingPseudoMoveBitboard, Bitboard oppColorPseudoAttackBB);
+AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitboards);
+AttackingAndPinnedBBs firstPseudoMoves(OneColorCurrPositions everyPieceColor);
+AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool currColor);
+MoveMag kingOppDir(MoveMag dir, int kingPos);
+
+void calcCombinedPos(AllCurrPositions& allCurrPositions);
+void calcCombinedMoves(AllPosMoves& posMoves);
+
 bool checkBounds(int x, int y);
 vector<Bitboard> arrayToVector(array<Bitboard, 2> arr);
-vector<Bitboard> main2();
 
 class singlePiecePosMoves;
 class PieceTypePosMoves;
@@ -39,7 +47,8 @@ public:
 	char pieceType;
 	vector<SinglePiecePosMoves> posBB;
 	//Maybe don't calculate this every time? Thus don't include it here. Don't know, may be worse.
-	Bitboard pieceTypeCombinedBB;
+	Bitboard pieceTypeCombinedCapBB;
+	Bitboard pieceTypeCombinedMoveBB;
 };
 
 
@@ -75,8 +84,11 @@ public:
 class CheckData {
 public: 
 	int numOfChecks;
-	Bitboard checkerLocation;
+	vector<Bitboard> checkerLocations;
 };
 
+AttackingAndPinnedBBs firstPseudoMoves(OneColorCurrPositions everyPieceColor);
+AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, OneColorCurrPositions everyPieceColor);
+CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor);
 
 #endif

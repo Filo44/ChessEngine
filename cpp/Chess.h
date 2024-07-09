@@ -19,9 +19,6 @@ unordered_map<char, int> pieceToNumber = {
 		{'p', 5}
 };
 
-//#include "Eigen/Core"
-
-//using Bitboard = Eigen::Matrix<bool, 8, 8>;
 using Bitboard = uint64_t;
 using namespace std;
 
