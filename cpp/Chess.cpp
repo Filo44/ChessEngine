@@ -8,7 +8,7 @@ using namespace std;
 
 int main() {
     httplib::Server svr;
-    string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+    string lFen = "6k1/5p2/6p1/8/7p/8/6NP/6K1";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
     AllPosMoves posMoves = fullMoveGenLoop(1, allPositionBitboards);
@@ -42,7 +42,7 @@ int main() {
         ////randomBB(3, 0) = true;
         //DUMMYbitboards.push_back(randomBB);
         //DUMMYbitboards.push_back(randomBB2);
-        res.set_content(convertVofBBJS(posMoves.pieceTypes[pieceToNumber['n']].fetchBitboards(true)), "text/plain");
+        res.set_content(convertVofBBJS(posMoves.pieceTypes[pieceToNumber['n']].fetchBitboards(false)), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 

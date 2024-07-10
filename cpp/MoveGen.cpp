@@ -127,10 +127,10 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 			int nY = y + possY[i];
 			int nX = x + possX[i];
 			if (checkBounds(nX, nY)) {
-				cout << "In bounds" << i << endl;
+				//cout << "In bounds" << i << endl;
 				if (getBit(oppColorPosBB, nX, nY)) {
 					setBitTo(&capBitboard, nX, nY, 1);
-				} else {
+				} else if(!getBit(thisColorPosBB, nX, nY)){
 					setBitTo(&moveBitboard, nX, nY, 1);
 				}
 			}
@@ -155,10 +155,10 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 		//y>lastfile is useless, optimize. Can't be on the last file
 		int forwards = (color ? -1 : 1);
 		bool notOverY = ((color && y < 7) || (!color && y > 0));
-		if (notOverY && !getBit(oppColorPosBB, x, y + forwards)) {
+		if (notOverY && !getBit(oppColorPosBB, x, y + forwards) && !getBit(thisColorPosBB, x, y + forwards)) {
 			setBitTo(&moveBitboard, x, y + forwards, 1);
 			//Checking if it can go forwards twice
-			if (y == startRank && !getBit(oppColorPosBB, x, y + (forwards * 2))) {
+			if (y == startRank && !getBit(oppColorPosBB, x, y + (forwards * 2)) && !getBit(thisColorPosBB, x, y + (forwards * 2))) {
 				setBitTo(&moveBitboard, x, y + (forwards * 2), 1);
 			}
 		}
@@ -279,10 +279,10 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitbo
 	Bitboard oppAttacking = attackingAndPinned.attacking;
 	vector<PinnedPieceData> pinnedPieces = attackingAndPinned.pinnedPieces;
 
-	int kingExists = (allPositionBitboards.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB.size());
+	/*int kingExists = (allPositionBitboards.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB.size());
 	cout << "AmKings:" << kingExists;
 	bitset<64> binary = allPositionBitboards.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB[0];
-	cout << binary;
+	cout << binary;*/
 	//KING IN TWO PLACES, DEBUG AFTER SLEEP :)
 	CheckData checkChecksRes = checkChecks(allPositionBitboards, currentColor);
 	int numOfCheck = checkChecksRes.numOfChecks;
@@ -447,14 +447,18 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor) {
 	vector<Bitboard>& checkerLocations = res.checkerLocations;
 	//Can remove this line of code and just modify the allcurrpositions param. Optimize. Not really anymore as I use the param to get the original vector of bbs, can change this though.
 	AllCurrPositions kingMorphedPositions = allCurrPositions;
+	Bitboard kingPosBB = kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB[0];
+	int kingPos = _tzcnt_u64(kingPosBB);
 	//Loops over all types of pieces, (not all pieces on the board as the name of the variable might suggest)
 	for (char pieceType : pieces) {
 		if (pieceType == 'k') {
 			continue;
 		}
 		//Optimize:
-		Bitboard kingPosBB = kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB[0];
-		int kingPos = _tzcnt_u64(kingPosBB);
+		//Debug Code:
+		//cout << convertToJSArr(allPositionBitboardsToMatrix(allCurrPositions), 8, 8) << endl;
+		//End of Debug Code
+
 
 		kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB = {};
 		kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber[pieceType]].posBB.push_back(kingPosBB);
