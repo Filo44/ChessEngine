@@ -13,6 +13,7 @@ using namespace std;
 using Bitboard = uint64_t;
 using MoveMag = array<int, 3>;
 
+class MoveDesc;
 class SinglePiecePosMoves;
 class PieceTypePosMoves;
 class AllPosMoves;
@@ -29,7 +30,7 @@ class AllCurrPositions;
 MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor);
 array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard thisColorPosBB, int x, int y);
 array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard kingPseudoMoveBitboard, Bitboard oppColorPseudoAttackBB);
-AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitboards);
+AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitboards);
 AttackingAndPinnedBBs firstPseudoMoves(AllCurrPositions allCurrPositions, bool currColor);
 AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool currColor, CheckData checkData, int kingPos);
 MoveMag kingOppDir(MoveMag dir, int kingPos);

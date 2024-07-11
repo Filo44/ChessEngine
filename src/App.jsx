@@ -16,8 +16,10 @@ import pw from "./assets/pw.svg";
 function App(){ 
     const [response,setResponse]=useState("Waiting...")
     const [responded, setResonded]= useState(false);
-    const [bitboard,setBitboard]=useState(-1);
-    const [currentBitboard, setCurrentBitboard]=useState(0);
+    const [posMoves,setPosMoves]=useState(-1);
+    const [currPieceType, setCurrPieceType]=useState(null);
+    const [capOrMove, setCapOrMove] = useState(-1);
+    const [currPiece, setCurrPiece]=useState(-1);
     const [bitboardVisibility,setbitboardVisibility]=useState(true);
     const reference={
         "bb":bb,
@@ -33,6 +35,15 @@ function App(){
         "rw":rw,
         "pw":pw
     }
+    const pieceCharToFullPieceName = {
+        "r":"Rook",
+        "n":"Knight",
+        "b":"Bishop",
+        "k":"King", 
+        "q":"Queen",
+        "p":"Pawn"
+    }
+
     useEffect(() => {
         fetchDataW((data)=>{
             // console.log("FIRST TRY BABY!")
@@ -43,6 +54,7 @@ function App(){
         try {
             const response = await fetch('http://localhost:8080/'+dataPoint);
             const data = await response.text();
+            console.log(data);
             console.log('Response from C++ server:', JSON.parse(data)); 
             func(data);
             setResonded(true)
@@ -52,6 +64,7 @@ function App(){
             setTimeout(fetchDataW(func, dataPoint),1000)
         }
     };
+
     //*Stupid, for some reason it goes bottom to top. Going to go backwards to reverse it.
     let squaresEls=[];
     if(responded){
@@ -60,42 +73,124 @@ function App(){
             let x=i%8;
             // console.log("x:",x,"y:",y)
             let pieceChar=response[y][x]
+            console.log(response)
+            console.log(responded)
             // console.log((bitboard!=-1 && bitboard[currentBitboard][y][x]));
+            let colored=false;
+            if(posMoves!=-1 && currPieceType!=-1 && currPiece!=null && capOrMove!=-1){
+                let currPieceTypeType=posMoves.pieceTypes[currPieceType];
+                console.log("Currpiecetype:" + currPieceType)
+                if(currPiece==-1){
+                    //Means it is looking at the combined BB
+                    colored=capOrMove==0 ? currPieceTypeType.combinedMoveBB[y][x]:currPieceTypeType.combinedCapBB[y][x];
+                }else{
+                    console.log("currPieceTypeType:" + JSON.stringify(currPieceTypeType));
+                    console.log("currPieceTypeType.pieces:" + JSON.stringify(currPieceTypeType.pieces));
+                    console.log("currPiece:" + JSON.stringify(currPiece));
+                    console.log("currPieceTypeType.pieces[currPiece]:" + JSON.stringify(currPieceTypeType.pieces[currPiece]));
+                    if(capOrMove==0){
+                        colored=currPieceTypeType.pieces[currPiece].moveBitboard[y][x];
+                    }else{
+                        colored=currPieceTypeType.pieces[currPiece].capBitboard[y][x];
+                    }
+                }
+
+            }
+            
             squaresEls.push(
                 <Square 
                     tileColor={(x+y)%2}
                     piece={pieceChar}
                     pieceSvg={reference[pieceChar.toLowerCase() + ((pieceChar==pieceChar.toUpperCase())?"w":"b")]}
-                    colored={(bitboard!=-1 && bitboardVisibility && bitboard[currentBitboard][y][x])}
+                    colored={colored}
                     color="#FF0000"
                 />
             )
         }
     }
-    let buttonEls=[];
-    for(let i=0;i<bitboard.length;i++){
-        buttonEls.push(<>
-            <button className='changeBitboardButtons'
-                onClick={()=>setCurrentBitboard(i)}
-            >{i+1}</button>
+    let pieceTypeButtons=[];
+    let piecesButtons=[];
+
+    if(posMoves!=-1){
+        for(let i=0;i<posMoves.pieceTypes.length;i++){
+            let pieceType = posMoves.pieceTypes[i];
+            let pieceTypeChar = pieceType.pieceChar;
+            if(pieceType.pieces.length==0){
+                continue;
+            }
+            pieceTypeButtons.push(<>
+                <button className={'pieceButtons' + (currPieceType==i ? " greyed": "")}
+                    onClick={()=>{setCurrPieceType(i);setCurrPiece(-1);}}
+                >{pieceCharToFullPieceName[pieceTypeChar]}</button>
         </>)
+        }
+        if(currPieceType!=-1){
+            piecesButtons.push(
+                <>
+                    <button className={'pieceButtons' + (capOrMove==0 ? " greyed": "")}
+                        onClick={()=>{setCapOrMove(0)}}
+                    >
+                        Move Bitboards
+                    </button>
+                </> 
+            )
+            piecesButtons.push(
+                <>
+                    <button className={'pieceButtons' + (capOrMove==1 ? " greyed": "")}
+                        onClick={()=>{setCapOrMove(1)}}
+                    >
+                        Capture Bitboards
+                    </button>
+                </>
+                    
+            )
+            piecesButtons.push(<>
+                <br/>
+            </>)
+            if(capOrMove!=-1){
+                if(posMoves.pieceTypes[currPieceType].pieces.length!=0){
+                    piecesButtons.push(<>
+                        <button className={'pieceButtons' + (currPiece==-1 ? " greyed": "")}
+                            onClick={()=>setCurrPiece(-1)}
+                            >{capOrMove==0 ? "Piece Move Combined Bitboard" : "Piece Capture Combined Bitboard"}</button>
+                    </>)
+                }
+
+                piecesButtons.push(<>
+                    <br/>
+                </>);
+
+                for(let i=0;i<posMoves.pieceTypes[currPieceType].pieces.length;i++){
+                    let piece = posMoves.pieceTypes[currPieceType].pieces[i];
+                    piecesButtons.push(<>
+                        <button className={'pieceButtons' + (currPiece==i ? " greyed": "")}
+                            onClick={()=>{setCurrPiece(i)}}
+                            >{i+1}</button>
+                    </>)
+                }
+            }
+            
+        }
+        
     }
     
-
+    
     return (
         <div>
-        <h1>React App</h1>
+        <h1>The ACE</h1>
         <p>{response}</p>
         <div className='tiles'>
             {squaresEls}
         </div>
         <button className='bitboardButton'
-            onClick={()=>fetchDataW((data)=>{setBitboard(JSON.parse(data))},"getBitboards")}
-        >{bitboard==-1? "Get":"Refresh"} bitboard</button>
-        {bitboard!=-1 && <button className='bitboardButton'
+            onClick={()=>fetchDataW((data)=>{setPosMoves(JSON.parse(data))},"getBitboards")}
+        >{posMoves==-1? "Get":"Refresh"} bitboard</button>
+        {posMoves!=-1 && <button className='bitboardButton'
             onClick={()=>setbitboardVisibility((visibility)=>!visibility)}
         >Turn bitboards {bitboardVisibility? "Off":"On"}</button>}
-        {buttonEls}
+        {pieceTypeButtons}
+        <br/>
+        {currPieceType!= -1 && piecesButtons}
         </div>
     );
 };

@@ -77,3 +77,15 @@ h1 {
 .changeBitboardButtons{
   margin-right:6px;
 }
+.pieceButtons{
+  margin:2px;
+  border-radius: 7px;
+  border:none;
+  padding:3px;
+  padding-left: 5px;
+  padding-right: 5px;
+  background-color: #7c7c7c;
+}
+.greyed{
+  background-color: #5a5a5a;
+}

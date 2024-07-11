@@ -10,6 +10,7 @@
 using namespace std;
 using Bitboard = uint64_t;
 
+class MoveDesc;
 class PieceTypeCurrPositions;
 class OneColorCurrPositions;
 class AllCurrPositions;
@@ -27,6 +28,8 @@ void delete2DArray(char** arr, int rows);
 string convertToString(char** arr, int cols, int rows);
 string convertToJSArr(char** arr, int cols, int rows);
 string convertVofBBJS(vector<Bitboard> matrixVector);
+stringstream convertBBJS(Bitboard curBB);
+string allPosMovesToMatrix(AllPosMoves posMoves);
 
 AllCurrPositions fenToPosBitboards(std::string fen);
 char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);

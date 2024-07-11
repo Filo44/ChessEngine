@@ -118,12 +118,12 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 	//Else if because if the piece is a knight, the dirs would be empty...
 	// thus using the check before to cut down on the pieces you have to check are knights
 	else if (pieceType == 'n') {
-		cout << "Knight" << endl;
+		//cout << "Knight" << endl;
 		// All possible moves of a knight
 		int possX[8] = { 2, 1, -1, -2, -2, -1,  1,  2 };
 		int possY[8] = { 1, 2,  2,  1, -1, -2, -2, -1 };
 		for (int i = 0; i < 8; i++) {
-			cout << "Knight" << i << endl;
+			//cout << "Knight" << i << endl;
 			int nY = y + possY[i];
 			int nX = x + possX[i];
 			if (checkBounds(nX, nY)) {
@@ -139,14 +139,20 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 		//0 indexed btw
 		int startRank;
 		int lastRank;
+		int enPassantRow;
 		//Checking if white
 		if (color) {
 			//Inverted because of how stupid matricies are made in programming languages
 			startRank = 6;
 			lastRank = 0;
+			//Its not where you can get en passant, it's where you can en passant
+			enPassantRow = 3;
 		} else {
 			startRank = 1;
 			lastRank = 7;
+
+			//Its not where you can get en passant, it's where you can en passant
+			enPassantRow = 4;
 		}
 
 		//Checking if they can go forward once
@@ -155,45 +161,80 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 		//y>lastfile is useless, optimize. Can't be on the last file
 		int forwards = (color ? -1 : 1);
 		bool notOverY = ((color && y < 7) || (!color && y > 0));
-		if (notOverY && !getBit(oppColorPosBB, x, y + forwards) && !getBit(thisColorPosBB, x, y + forwards)) {
+		//!pseudo because when you are checking which squares the opp color is attacking a pawn forwards move doesn't count as attacking
+		if (notOverY && !getBit(oppColorPosBB, x, y + forwards) && !getBit(thisColorPosBB, x, y + forwards) && !pseudo) {
 			setBitTo(&moveBitboard, x, y + forwards, 1);
 			//Checking if it can go forwards twice
 			if (y == startRank && !getBit(oppColorPosBB, x, y + (forwards * 2)) && !getBit(thisColorPosBB, x, y + (forwards * 2))) {
 				setBitTo(&moveBitboard, x, y + (forwards * 2), 1);
 			}
 		}
+		int pawnWhoDoubleMoved = allCurrPositions.colorBitboards[!currentColor].pawnWhoDoubleMoved;
+		bool enPassantIsPosLeft = false;
+		bool enPassantIsPosRight = false;
+
+		//cout << "Checking en passant" << endl;
+		//cout << "Pawns who double moved: " << pawnWhoDoubleMoved << endl;
+		//cout << "y: " << y << endl;
+		//cout << "enPassantRow: " << enPassantRow << endl;
+
+		if (pawnWhoDoubleMoved != -1 && y==enPassantRow) {
+			//cout << "Checking stage 2" << endl;
+			int pawnPos = _tzcnt_u64(allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['p']].posBB[pawnWhoDoubleMoved]);
+			//There can only be one... pawn who can get en passant
+			if ((pawnPos % 8) == (x - 1)) {
+				cout << "Left" << endl;
+				enPassantIsPosLeft = true;
+			} else if((pawnPos % 8) == (x + 1)){
+				cout << "Right" << endl;
+				enPassantIsPosRight = true; 
+			}
+		}
+
+		//En Passant captures into a square which doesn't have a piece 
+		// thus that is how I am going to detect whether it is en passant
+
+
 		//Take to the left
-		if (x > 0 && notOverY && getBit(oppColorPosBB, x - 1, y + forwards)) {
-			setBitTo(&capBitboard, x - 1, y + forwards, 1);
+		if (x > 0 && notOverY ) {
+			//|| pseudo because when you are checking which squares the opp color is attacking a pawn takes even though there isn't a piece there should be counted
+			if (getBit(oppColorPosBB, x - 1, y + forwards) || enPassantIsPosLeft || pseudo) {
+				setBitTo(&capBitboard, x - 1, y + forwards, 1);
+			}
 		}
-		if (x < 7 && notOverY && getBit(oppColorPosBB, x + 1, y + forwards)) {
-			setBitTo(&capBitboard, x + 1, y + forwards, true);
+		//Take to the right
+		if (x < 7 && notOverY ) {
+			//|| pseudo because when you are checking which squares the opp color is attacking a pawn takes even though there isn't a piece there should be counted
+			if (getBit(oppColorPosBB, x + 1, y + forwards) || enPassantIsPosRight || pseudo) {
+				setBitTo(&capBitboard, x + 1, y + forwards, 1);
+			}
 		}
-		//Do En passant
-		//EN PASSANT c'est le pire, je deteste (Squiggly line C)a. 
+
 	}
 	else if (pieceType == 'k') {
-		
-		if (pseudo) {
-			//Generating pseudo-legal moves for the king,
-			//Necessary because to generate the actual king moves you need to have every square that your opponent is attacking
-			//And you can't have that without calculating the moves for a king, thus a loop
-			//So you generate the pseudo-legal king moves such that you can use them to calculate the moves of the king of the opposite color.
+		//Generating pseudo-legal moves for the king,
+		//Necessary because to generate the actual king moves you need to have every square that your opponent is attacking
+		//And you can't have that without calculating the moves for a king, thus a loop
+		//So you generate the pseudo-legal king moves such that you can use them to calculate the moves of the king of the opposite pieceMovingColor.
 			
-			//No need to calculate castles here as where the king moves in a castle it isn't currently attacking, 
-			//thus useless for generating pseudo legal moves to then use to generate legal moves for the king
-			//Not the same as the knight, these are not pairs but combinations
-			for (int xInc = -1; xInc < 2; xInc++) {
-				for (int yInc = -1; yInc < 2; (xInc == 0) ? (yInc += 2) : (yInc++)) {
-					if (getBit(oppColorPosBB, x + xInc, y + yInc)) {
-						setBitTo(&capBitboard, x + xInc, y + yInc, 1);
-					} else {
-						setBitTo(&moveBitboard, x + xInc, y + yInc, 1);
+		//No need to calculate castles here as where the king moves in a castle it isn't currently attacking, 
+		//thus useless for generating pseudo legal moves to then use to generate legal moves for the king
+		//Not the same as the knight, these are not pairs but combinations
+		for (int xInc = -1; xInc < 2; xInc++) {
+			int nX = x + xInc;
+			for (int yInc = -1; yInc < 2; yInc++) {
+				if (yInc == 0 && xInc == 0) {
+					continue;
+				}
+				int nY = y + yInc;
+				if (checkBounds(nX,nY)) {
+					if (getBit(oppColorPosBB, nX, nY)) {
+						setBitTo(&capBitboard, nX, nY, 1);
+					} else if (!getBit(thisColorPosBB, nX, nY)) {
+						setBitTo(&moveBitboard, nX, nY, 1);
 					}
 				}
 			}
-		} else {
-
 		}
 	}
 	
@@ -216,7 +257,7 @@ array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard t
 	while (i < (dir[2] + 1)) {
 		nX += dir[0];
 		nY += dir[1];
-		//Checks if true, if it is true it means there is a piece of the opposite color and you should ...
+		//Checks if true, if it is true it means there is a piece of the opposite pieceMovingColor and you should ...
 		if (getBit(oppColorPosBB, nX, nY)) {
 			//Append it to the capture bb
 			setBitTo(&localCapBitboard, nX, nY, 1);
@@ -253,23 +294,19 @@ Bitboard pieceToPieceBitboard(MoveMag dir, int x, int y) {
 }
 
 array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard kingPseudoMoveBitboard, Bitboard oppColorPseudoAttackBB) {
-	//The oppColorPseudoAttackBB is a bitboard of the move and capture pseudo bitboards(ORed together) of the opposite color
+	//The oppColorPseudoAttackBB is a bitboard of the move and capture pseudo bitboards(ORed together) of the opposite pieceMovingColor
 	//Pseudo because it calculates the king moves without thinking about checks or anything else...
 	//such that I can actually generate the actual king moves of the opposite-colored king
 	Bitboard kingCapBitboard = kingPseudoCapBitboard & ~oppColorPseudoAttackBB;
 	Bitboard kingMoveBitboard = kingPseudoMoveBitboard & ~oppColorPseudoAttackBB;
-	return { kingCapBitboard, kingMoveBitboard };
+	return { kingMoveBitboard , kingCapBitboard };
 }
 
-AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitboards) {
+AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitboards) {
 	calcCombinedPos(allPositionBitboards);
-	//AllPosMoves posMoves;
-	//for (int i = 0; i < 6; i++) {
-	//	PieceTypePosMoves newPiece;
-	//	newPiece.pieceType = pieces[i];
-	//	posMoves.pieceTypes[i] = newPiece;
-	//}
 
+	//Resets en passant after full turn
+	allPositionBitboards.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
 
 	//Optimize this:
 	AllCurrPositions allPositionBitboardsMinusKing = allPositionBitboards;
@@ -279,11 +316,6 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitbo
 	Bitboard oppAttacking = attackingAndPinned.attacking;
 	vector<PinnedPieceData> pinnedPieces = attackingAndPinned.pinnedPieces;
 
-	/*int kingExists = (allPositionBitboards.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB.size());
-	cout << "AmKings:" << kingExists;
-	bitset<64> binary = allPositionBitboards.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB[0];
-	cout << binary;*/
-	//KING IN TWO PLACES, DEBUG AFTER SLEEP :)
 	CheckData checkChecksRes = checkChecks(allPositionBitboards, currentColor);
 	int numOfCheck = checkChecksRes.numOfChecks;
 
@@ -304,8 +336,10 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions allPositionBitbo
 	//King Moves:
 	//Not sure if the line below works.
 	MoveCapAndPinnedBBs pseudoLegalKingMoves = genBitboard(currentColor?'K' : 'k', kingPos % 8, kingPos / 8, allPositionBitboards, true, currentColor);
+
 	array<Bitboard, 2> legalKingMoves = genKingLegalMoves(pseudoLegalKingMoves.capBitboard, pseudoLegalKingMoves.moveBitboard, oppAttacking);
-	SinglePiecePosMoves kingMoves;
+
+	SinglePiecePosMoves kingMoves{};
 	kingMoves.moveBitboard = legalKingMoves[0];
 	kingMoves.capBitboard = legalKingMoves[1];
 	kingMoves.posBitboard = kingPosBB;
@@ -401,7 +435,7 @@ AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPiec
 			Bitboard localMoveBitboard = 0;
 			int piecePos = _tzcnt_u64(piece);
 			
-			MoveCapAndPinnedBBs generatedBitboards = genBitboard(currColor ? toupper(everyPiece.pieceType) : tolower(everyPiece.pieceType), piecePos % 8, piecePos / 8, allCurrPositions, true,currColor);
+			MoveCapAndPinnedBBs generatedBitboards = genBitboard(currColor ? toupper(everyPiece.pieceType) : tolower(everyPiece.pieceType), piecePos % 8, piecePos / 8, allCurrPositions, false,currColor);
 			Bitboard moveGeneratedBitboard = generatedBitboards.moveBitboard;
 			Bitboard capGeneratedBitboard = generatedBitboards.capBitboard;
 
@@ -454,12 +488,8 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor) {
 		if (pieceType == 'k') {
 			continue;
 		}
+
 		//Optimize:
-		//Debug Code:
-		//cout << convertToJSArr(allPositionBitboardsToMatrix(allCurrPositions), 8, 8) << endl;
-		//End of Debug Code
-
-
 		kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB = {};
 		kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber[pieceType]].posBB.push_back(kingPosBB);
 		
@@ -534,10 +564,4 @@ bool checkBounds(int x, int y) {
 }
 
 vector<Bitboard> arrayToVector(array<Bitboard, 2> arr) {
-	vector<Bitboard> v = {};
-
-	for (int i = 0; i < 2; i++) {
-		v.push_back(arr[i]);
-	}
-	return v;
-}
+	v
