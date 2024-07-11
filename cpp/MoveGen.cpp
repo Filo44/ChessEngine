@@ -564,4 +564,10 @@ bool checkBounds(int x, int y) {
 }
 
 vector<Bitboard> arrayToVector(array<Bitboard, 2> arr) {
-	v
+	vector<Bitboard> v = {};
+
+	for (int i = 0; i < 2; i++) {
+		v.push_back(arr[i]);
+	}
+	return v;
+}

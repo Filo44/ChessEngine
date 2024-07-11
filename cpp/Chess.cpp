@@ -8,7 +8,7 @@ using namespace std;
 
 int main() {
     httplib::Server svr;
-    string lFen = "1k6/3p4/8/2P5/8/8/8/1K2N3";
+    string lFen = "1k6/3p4/1P6/8/8/8/8/1K2N3";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
 
@@ -231,4 +231,20 @@ string convertVofBBJS(vector<Bitboard> matrixVector) {
 stringstream convertBBJS(Bitboard curBB) {
     stringstream ss;
     ss << "[";
-    for (int bit = 0; bit < 64; +
+    for (int bit = 0; bit < 64; ++bit) {
+        if (bit % 8 == 0) {
+            ss << "[";
+        }
+        ss << (getBit(curBB, bit % 8, bit / 8) ? "true" : "false");
+        if (bit % 8 != 7) {
+            ss << ",";
+        } else {
+            ss << "]";
+            if (bit / 8 != 7) {
+                ss << ",";
+            }
+        }
+    }
+    ss << "]";
+    return ss;
+}
