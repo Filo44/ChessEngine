@@ -8,32 +8,27 @@ using namespace std;
 
 int main() {
     httplib::Server svr;
-    string lFen = "1k6/3p4/1P6/8/8/8/8/1K2N3";
+    string lFen = "r3kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"; //Check this position later with the moves below.
+    //string lFen = "1r6/8/1k6/2P5/3r4/3n4/5K2/8";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
 
     AllPosMoves posMoves = fullMoveGenLoop(0, allPositionBitboards);
 
     //Delete this after
-    /*MoveDesc move;
-    move.pieceMovingColor = 0;
+    /*allPositionBitboards.colorBitboards[0].canCastleKSide = false;
+    allPositionBitboards.colorBitboards[0].canCastleQSide = false;
+    allPositionBitboards.colorBitboards[1].canCastleKSide = false;
+    allPositionBitboards.colorBitboards[1].canCastleQSide = false;
+    MoveDesc move;
+    move.pieceMovingColor = 1;
     move.moveOrCapture = 0;
     move.piece = 0;
     move.pieceType = pieceToNumber['p'];
-    move.posOfMove = 27;
+    move.posOfMove = 34;
     allPositionBitboards.applyMove(move);
 
     cout << allPositionBitboards.colorBitboards[0].pawnWhoDoubleMoved << endl;
-    posMoves = fullMoveGenLoop(1, allPositionBitboards);
-
-    MoveDesc move1;
-    move1.pieceMovingColor = 1;
-    move1.moveOrCapture = 1;
-    move1.piece = 0;
-    move1.pieceType = pieceToNumber['p'];
-    move1.posOfMove = 19;
-    allPositionBitboards.applyMove(move1);
-
     posMoves = fullMoveGenLoop(0, allPositionBitboards);*/
 
 

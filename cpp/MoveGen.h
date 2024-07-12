@@ -27,7 +27,7 @@ class OneColorCurrPositions;
 class AllCurrPositions;
 
 //vector<Bitboard> main2();
-MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor);
+MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor, Bitboard oppColorAttackingSquares = 0);
 array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard thisColorPosBB, int x, int y);
 array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard kingPseudoMoveBitboard, Bitboard oppColorPseudoAttackBB);
 AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitboards);
@@ -35,6 +35,7 @@ AttackingAndPinnedBBs firstPseudoMoves(AllCurrPositions allCurrPositions, bool c
 AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool currColor, CheckData checkData, int kingPos);
 MoveMag kingOppDir(MoveMag dir, int kingPos);
 CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor);
+array<Bitboard, 2> pieceToPieceBitboard(MoveMag dir, int x, int y);
 
 void calcCombinedPos(AllCurrPositions& allCurrPositions);
 void calcCombinedMoves(AllPosMoves& posMoves);
