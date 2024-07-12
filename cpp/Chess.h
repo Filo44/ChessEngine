@@ -23,25 +23,29 @@ class AttackingAndPinnedBBs;
 class MoveCapAndPinnedBBs;
 class CheckData;
 
-//char** fenToMatrix(std::string fen);
-void delete2DArray(char** arr, int rows);
-string convertToString(char** arr, int cols, int rows);
-string convertToJSArr(char** arr, int cols, int rows);
+// char** fenToMatrix(std::string fen);
+void delete2DArray(char **arr, int rows);
+string convertToString(char **arr, int cols, int rows);
+string convertToJSArr(char **arr, int cols, int rows);
 string convertVofBBJS(vector<Bitboard> matrixVector);
 stringstream convertBBJS(Bitboard curBB);
 string allPosMovesToMatrix(AllPosMoves posMoves);
 
 AllCurrPositions fenToPosBitboards(std::string fen);
-char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
+char **allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
 
-inline void setBitTo(Bitboard* initBB, int posX, int posY, bool value) {
-	if (value == 0) {
+inline void setBitTo(Bitboard *initBB, int posX, int posY, bool value)
+{
+	if (value == 0)
+	{
 		*initBB &= ~(1ULL << posX + (posY * 8));
 	}
-	else {
+	else
+	{
 		*initBB |= (1ULL << posX + (posY * 8));
 	}
 }
-inline bool getBit(Bitboard bb, int posX, int posY) {
+inline bool getBit(Bitboard bb, int posX, int posY)
+{
 	return (bb >> posX + (posY * 8)) & 1;
 }

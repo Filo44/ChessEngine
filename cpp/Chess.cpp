@@ -8,19 +8,20 @@ using namespace std;
 
 int main() {
     httplib::Server svr;
-    string lFen = "r3kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"; //Check this position later with the moves below.
+    string lFen = "6r1/8/4k3/8/6B1/8/8/1K6"; //Check this position later with the moves below.
     //string lFen = "1r6/8/1k6/2P5/3r4/3n4/5K2/8";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
+    allPositionBitboards.colorBitboards[0].canCastleKSide = false;
+    allPositionBitboards.colorBitboards[0].canCastleQSide = false;
+    allPositionBitboards.colorBitboards[1].canCastleKSide = false;
+    allPositionBitboards.colorBitboards[1].canCastleQSide = false;
 
     AllPosMoves posMoves = fullMoveGenLoop(0, allPositionBitboards);
 
     //Delete this after
-    /*allPositionBitboards.colorBitboards[0].canCastleKSide = false;
-    allPositionBitboards.colorBitboards[0].canCastleQSide = false;
-    allPositionBitboards.colorBitboards[1].canCastleKSide = false;
-    allPositionBitboards.colorBitboards[1].canCastleQSide = false;
-    MoveDesc move;
+    
+    /*MoveDesc move;
     move.pieceMovingColor = 1;
     move.moveOrCapture = 0;
     move.piece = 0;
@@ -30,10 +31,21 @@ int main() {
 
     cout << allPositionBitboards.colorBitboards[0].pawnWhoDoubleMoved << endl;
     posMoves = fullMoveGenLoop(0, allPositionBitboards);*/
+    
+    /*MoveDesc move;
+    move.pieceMovingColor = 0;
+    move.moveOrCapture = 0;
+    move.piece = 0;
+    move.pieceType = pieceToNumber['k'];
+    move.posOfMove = 6;
+    allPositionBitboards.applyMove(move);
+
+    posMoves = fullMoveGenLoop(1, allPositionBitboards);*/
+
 
 
     // Handle GET requests
-    svr.Get("/data", [allPositionBitboards](const httplib::Request& /*req*/, httplib::Response& res) {
+    svr.Get("/data", [&allPositionBitboards, &posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
         char** arr = allPositionBitboardsToMatrix(allPositionBitboards);
         res.set_content(convertToJSArr(arr, 8, 8), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
@@ -49,6 +61,7 @@ int main() {
 
     // Run the server
     svr.listen("localhost", 8080);
+ 
 
     return 0;
 }
@@ -67,9 +80,6 @@ AllCurrPositions fenToPosBitboards(std::string fen) {
             allPositionBitboards.colorBitboards[color].pieceTypes[i] = newPiece; 
         }
     }
-   
-
-
 
     int actualPos = -1;
     for (int i = 0; i < fen.length(); i++) {
@@ -117,13 +127,6 @@ char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL) {
             for (Bitboard bitboard : allPositionBitboardsL.colorBitboards[color].pieceTypes[pieceI].posBB) {
                 //Finds the last, and in this case only, 1
                 int pos = _tzcnt_u64(bitboard);
-                
-                ////Debugging
-                //setBitTo(&bitboard, pos % 8, pos / 8, 0);
-                //if (bitboard != 0) {
-                //    cout << "Wtf, two pieces in one bitboard, pieceType" << pieces[pieceI];
-                //}
-                ////End of Debugging
                 
                 //y, x for arrays
                 arr[pos / 8][pos % 8] = color? toupper(pieces[pieceI]) : pieces[pieceI] ;
