@@ -8,7 +8,7 @@ using namespace std;
 
 int main() {
     httplib::Server svr;
-    string lFen = "6r1/8/4k3/8/6B1/8/8/1K6"; //Check this position later with the moves below.
+    string lFen = "8/8/8/8/k3p2Q/8/3P4/3K4"; //Check this position later with the moves below.
     //string lFen = "1r6/8/1k6/2P5/3r4/3n4/5K2/8";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
@@ -17,20 +17,19 @@ int main() {
     allPositionBitboards.colorBitboards[1].canCastleKSide = false;
     allPositionBitboards.colorBitboards[1].canCastleQSide = false;
 
-    AllPosMoves posMoves = fullMoveGenLoop(0, allPositionBitboards);
+    AllPosMoves posMoves = fullMoveGenLoop(1, allPositionBitboards);
 
     //Delete this after
     
-    /*MoveDesc move;
+    MoveDesc move;
     move.pieceMovingColor = 1;
     move.moveOrCapture = 0;
     move.piece = 0;
     move.pieceType = pieceToNumber['p'];
-    move.posOfMove = 34;
+    move.posOfMove = 35;
     allPositionBitboards.applyMove(move);
 
-    cout << allPositionBitboards.colorBitboards[0].pawnWhoDoubleMoved << endl;
-    posMoves = fullMoveGenLoop(0, allPositionBitboards);*/
+    posMoves = fullMoveGenLoop(0, allPositionBitboards);
     
     /*MoveDesc move;
     move.pieceMovingColor = 0;

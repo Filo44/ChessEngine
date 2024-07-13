@@ -153,7 +153,8 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				}
 			}
 		}
-	} else if (pieceType == 'p') {
+	} 
+	else if (pieceType == 'p') {
 		//0 indexed btw
 		int startRank;
 		int lastRank;
@@ -187,32 +188,73 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				setBitTo(&moveBitboard, x, y + (forwards * 2), 1);
 			}
 		}
-		int pawnWhoDoubleMoved = allCurrPositions.colorBitboards[!currentColor].pawnWhoDoubleMoved;
 		bool enPassantIsPosLeft = false;
 		bool enPassantIsPosRight = false;
+		if (!pseudo) {
+			int pawnWhoDoubleMoved = allCurrPositions.colorBitboards[!currentColor].pawnWhoDoubleMoved;;
+			//cout << "Checking en passant" << endl;
+			//cout << "Pawns who double moved: " << pawnWhoDoubleMoved << endl;
+			//cout << "y: " << y << endl;
+			//cout << "enPassantRow: " << enPassantRow << endl;
 
-		//cout << "Checking en passant" << endl;
-		//cout << "Pawns who double moved: " << pawnWhoDoubleMoved << endl;
-		//cout << "y: " << y << endl;
-		//cout << "enPassantRow: " << enPassantRow << endl;
+			if (pawnWhoDoubleMoved != -1 && y == enPassantRow) {
+				//cout << "Checking stage 2" << endl;
+				int pawnPos = _tzcnt_u64(allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['p']].posBB[pawnWhoDoubleMoved]);
+				//There can only be one... pawn who can get en passant
+				int pieceIndex;
+				for (int i = 0; i < allCurrPositions.colorBitboards[currentColor].pieceTypes[pieceToNumber['p']].posBB.size(); i++) {
+					Bitboard pawnChecking = allCurrPositions.colorBitboards[currentColor].pieceTypes[pieceToNumber['p']].posBB[i];
+					if (_tzcnt_u64(pawnChecking) == (x + (y * 8))) {
+						pieceIndex = i;
+					}
+				}
+				//Creates an en passant move with values which are the same when capturing to the left as to the right
+				MoveDesc enPassantMove;
+				enPassantMove.pieceMovingColor = currentColor;
+				enPassantMove.moveOrCapture = 0;
+				enPassantMove.pieceType = pieceToNumber['p'];
+				enPassantMove.piece = pieceIndex;
 
-		if (pawnWhoDoubleMoved != -1 && y == enPassantRow) {
-			//cout << "Checking stage 2" << endl;
-			int pawnPos = _tzcnt_u64(allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['p']].posBB[pawnWhoDoubleMoved]);
-			//There can only be one... pawn who can get en passant
-			if ((pawnPos % 8) == (x - 1)) {
-				cout << "Left" << endl;
-				enPassantIsPosLeft = true;
-			} else if ((pawnPos % 8) == (x + 1)) {
-				cout << "Right" << endl;
-				enPassantIsPosRight = true;
+				if ((pawnPos % 8) == (x - 1)) {
+					cout << "Left" << endl;
+					AllCurrPositions afterEnPassantPos = allCurrPositions;
+					MoveDesc enPassantMoveLeft = enPassantMove;
+
+					enPassantMoveLeft.posOfMove = (x - 1 + (8 * (y+1)));
+					afterEnPassantPos.applyMove(enPassantMoveLeft);
+
+					calcCombinedPos(afterEnPassantPos);
+					afterEnPassantPos.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
+					
+					//cout << convertToJSArr(allPositionBitboardsToMatrix(afterEnPassantPos), 8, 8) << endl;
+					//cout << "numOfChecks: " << checkChecks(afterEnPassantPos, currentColor).numOfChecks << endl;
+
+					if (checkChecks(afterEnPassantPos, currentColor).numOfChecks == 0) {
+						enPassantIsPosLeft = true;
+					}
+				} else if ((pawnPos % 8) == (x + 1)) {
+					cout << "Right" << endl;
+					AllCurrPositions afterEnPassantPos = allCurrPositions;
+					MoveDesc enPassantMoveRight = enPassantMove;
+
+					enPassantMoveRight.posOfMove = (x + 1 + (8 * (y+1)));
+					afterEnPassantPos.applyMove(enPassantMoveRight);
+
+					calcCombinedPos(afterEnPassantPos);
+					afterEnPassantPos.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
+					
+					//cout << convertToJSArr(allPositionBitboardsToMatrix(afterEnPassantPos), 8, 8) << endl;
+					//cout << "numOfChecks: " << checkChecks(afterEnPassantPos, currentColor).numOfChecks << endl;
+
+					if (checkChecks(afterEnPassantPos, currentColor).numOfChecks == 0) {
+						enPassantIsPosRight = true;
+					}
+				}
 			}
+
+			//En Passant captures into a square which doesn't have a piece 
+			// thus that is how I am going to detect whether it is en passant
 		}
-
-		//En Passant captures into a square which doesn't have a piece 
-		// thus that is how I am going to detect whether it is en passant
-
-
 		//Take to the left
 		if (x > 0 && notOverY) {
 			//|| pseudo because when you are checking which squares the opp color is attacking a pawn takes even though there isn't a piece there should be counted
@@ -237,8 +279,10 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				setBitTo(&moveBitboard, x + 1, y + forwards, 1);
 			}
 		}
+		
 
-	} else if (pieceType == 'k') {
+	} 
+	else if (pieceType == 'k') {
 		//Generating pseudo-legal moves for the king,
 		//Necessary because to generate the actual king moves you need to have every square that your opponent is attacking
 		//And you can't have that without calculating the moves for a king, thus a loop
@@ -271,9 +315,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				bool canActuallyCastleKSide = false;
 				bool canActuallyCastleQSide = false;
 				//If not in check(X=4 because if the king hasn't castled that's his x position)
-				cout << "stage 1" << endl;
 				if (!getBit(oppColorAttackingSquares, 4, firstRank)) {
-					cout << "stage 2" << endl;
 					if (allCurrPositions.colorBitboards[currentColor].canCastleQSide) {
 						canActuallyCastleQSide = true;
 						for (int i = 1; i <= 3; i++) {
@@ -286,28 +328,21 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 						}
 					}
 					if (allCurrPositions.colorBitboards[currentColor].canCastleKSide) {
-						cout << "stage 3" << endl;
 						canActuallyCastleKSide = true;
 						for (int i = 6; i >= 5; i--) {
 							//If there is a piece(Ours or not) on one of the squares we have to move through, or that square is being attacked:
 							//We can't castle in that direction
-							cout << "i: " << i << endl;
-							cout << "getBit(" << (bitset<64>)allCurrPositions.allPiecesCombBitboard << ", " << i << ", " << firstRank << ") : " << getBit(allCurrPositions.allPiecesCombBitboard, i, firstRank) << endl;
 							if (getBit(allCurrPositions.allPiecesCombBitboard, i, firstRank) || getBit(oppColorAttackingSquares, i, firstRank)) {
-								cout << "failed stage 3" << endl;
 								canActuallyCastleKSide = false;
 								break;
 							}
 						}
 					}
 				}
-				cout << "canActuallyCastleKSide: " << canActuallyCastleKSide << endl;
-				cout << "canActuallyCastleQSide: " << canActuallyCastleQSide << endl;
 				if (canActuallyCastleQSide) {
 					setBitTo(&moveBitboard, 2, firstRank, 1);
 				}
 				if (canActuallyCastleKSide) {
-					cout << "stage 4" << endl;
 					setBitTo(&moveBitboard, 6, firstRank, 1);
 				}
 
