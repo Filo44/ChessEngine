@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <unordered_map>
 
+
 using namespace std;
 using Bitboard = uint64_t;
 

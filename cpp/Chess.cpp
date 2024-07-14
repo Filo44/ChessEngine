@@ -1,6 +1,7 @@
 #include "Chess.h"
 #include "MoveGen.h"
 #include "Classes.h"
+#include "SearchAlgorithm.h"
 
 using namespace std;
 
@@ -8,7 +9,7 @@ using namespace std;
 
 int main() {
     httplib::Server svr;
-    string lFen = "8/8/8/8/k3p2Q/8/3P4/3K4"; //Check this position later with the moves below.
+    string lFen = "3k4/5ppp/2q5/3p2r1/8/1Q3P2/P4P1P/3R3K"; //Check this position later with the moves below.
     //string lFen = "1r6/8/1k6/2P5/3r4/3n4/5K2/8";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
@@ -18,10 +19,19 @@ int main() {
     allPositionBitboards.colorBitboards[1].canCastleQSide = false;
 
     AllPosMoves posMoves = fullMoveGenLoop(1, allPositionBitboards);
+    EvalAndMovesTo searchRes = minMax(allPositionBitboards, 1, 4);
+    cout << "Evaluation: " << searchRes.eval << endl;
+
+    cout << "posOfMove: " << searchRes.movesTo[searchRes.movesTo.size()-1].posOfMove << endl;
+    cout << "pieceType: " << pieces[searchRes.movesTo[searchRes.movesTo.size() - 1].pieceType] << endl;
+    
+    allPositionBitboards.applyMove(searchRes.movesTo[searchRes.movesTo.size() - 1]);
+
+    posMoves = fullMoveGenLoop(0, allPositionBitboards);
 
     //Delete this after
     
-    MoveDesc move;
+    /*MoveDesc move;
     move.pieceMovingColor = 1;
     move.moveOrCapture = 0;
     move.piece = 0;
@@ -29,17 +39,7 @@ int main() {
     move.posOfMove = 35;
     allPositionBitboards.applyMove(move);
 
-    posMoves = fullMoveGenLoop(0, allPositionBitboards);
-    
-    /*MoveDesc move;
-    move.pieceMovingColor = 0;
-    move.moveOrCapture = 0;
-    move.piece = 0;
-    move.pieceType = pieceToNumber['k'];
-    move.posOfMove = 6;
-    allPositionBitboards.applyMove(move);
-
-    posMoves = fullMoveGenLoop(1, allPositionBitboards);*/
+    posMoves = fullMoveGenLoop(0, allPositionBitboards);*/
 
 
 
@@ -50,10 +50,15 @@ int main() {
         res.set_header("Access-Control-Allow-Origin", "*");
         delete2DArray(arr, 8);
     });
+    svr.Get("/eval", [searchRes](const httplib::Request& /*req*/, httplib::Response& res) {
+        string eval = to_string(searchRes.eval);
+        res.set_content(eval, "text/plain");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
 
     svr.Get("/getBitboards", [posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
         //cout << allPosMovesToMatrix(posMoves) << endl;
-        //res.set_content(convertVofBBJS(posMoves.pieceTypes[pieceToNumber['n']].fetchBitboards(false)), "text/plain");
+        //searchRes.set_content(convertVofBBJS(posMoves.pieceTypes[pieceToNumber['n']].fetchBitboards(false)), "text/plain");
         res.set_content(allPosMovesToMatrix(posMoves), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
     });

@@ -177,20 +177,41 @@ function App(){
     
     return (
         <div>
-        <h1>The ACE</h1>
-        <p>{response}</p>
-        <div className='tiles'>
-            {squaresEls}
-        </div>
-        <button className='bitboardButton'
-            onClick={()=>fetchDataW((data)=>{setPosMoves(JSON.parse(data))},"getBitboards")}
-        >{posMoves==-1? "Get":"Refresh"} bitboard</button>
-        {posMoves!=-1 && <button className='bitboardButton'
-            onClick={()=>setbitboardVisibility((visibility)=>!visibility)}
-        >Turn bitboards {bitboardVisibility? "Off":"On"}</button>}
-        {pieceTypeButtons}
-        <br/>
-        {currPieceType!= -1 && piecesButtons}
+            <header>
+                <h1>The ACE</h1>
+                <p>{response}</p>
+            </header>
+            <div className='boardAndEval'>
+                <div className='tiles'>
+                    {squaresEls}
+                </div>
+                <div className='eval'> 
+                    hi
+                </div>
+            </div>
+            <div className='buttons'>
+                <button 
+                    className='bitboardButton'
+                    onClick={()=>fetchDataW((data)=>{setPosMoves(JSON.parse(data))},"getBitboards")}
+                >
+                    {posMoves==-1? "Get":"Refresh"} bitboard
+                </button>
+
+                {posMoves!=-1 && 
+                    <button 
+                        className='bitboardButton'
+                        onClick={()=>setbitboardVisibility((visibility)=>!visibility)}
+                    >
+                        Turn bitboards {bitboardVisibility? "Off":"On"}
+                    </button>
+                }
+                {pieceTypeButtons}
+                    
+                <br/>
+
+                {currPieceType!= -1 && piecesButtons}
+            </div>
+
         </div>
     );
 };

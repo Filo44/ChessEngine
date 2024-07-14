@@ -1,6 +1,7 @@
 #include "Chess.h"
 #include "MoveGen.h"
 #include "Classes.h"
+#include "SearchAlgorithm.h"
 #include <bitset>
 
 using namespace std;
