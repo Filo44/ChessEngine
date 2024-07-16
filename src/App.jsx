@@ -21,6 +21,8 @@ function App(){
     const [capOrMove, setCapOrMove] = useState(-1);
     const [currPiece, setCurrPiece]=useState(-1);
     const [bitboardVisibility,setbitboardVisibility]=useState(true);
+    const [evaluation, setEvaluation] = useState(0);
+    const [gotEvaluation, setGotEvalution] = useState(false);
     const reference={
         "bb":bb,
         "kb":kb,
@@ -49,6 +51,11 @@ function App(){
             // console.log("FIRST TRY BABY!")
             setResponse(JSON.parse(data));
         },"data");
+        fetchDataW((data)=>{
+            // console.log("FIRST TRY BABY!")
+            setEvaluation(JSON.parse(data));
+            setGotEvalution(true);
+        },"eval");
     }, []);
     async function fetchDataW(func,dataPoint) {
         try {
@@ -173,7 +180,11 @@ function App(){
         }
         
     }
-    
+    let evalBarHeight = 0;
+    if(gotEvaluation){
+        let evalBarHeightPercent = (1 / (1 + Math.exp(-0.25 * evaluation)));
+        evalBarHeight = 400 * evalBarHeightPercent;
+    }
     
     return (
         <div>
@@ -185,9 +196,9 @@ function App(){
                 <div className='tiles'>
                     {squaresEls}
                 </div>
-                <div className='eval'> 
-                    hi
-                </div>
+                    <div className='eval--Container'> 
+                        <div className='eval--WhiteBar' style={{height:evalBarHeight}}></div>
+                    </div>
             </div>
             <div className='buttons'>
                 <button 

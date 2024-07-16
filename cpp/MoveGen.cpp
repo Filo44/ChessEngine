@@ -189,14 +189,12 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				setBitTo(&moveBitboard, x, y + (forwards * 2), 1);
 			}
 		}
+
+		//Checking en passant
 		bool enPassantIsPosLeft = false;
 		bool enPassantIsPosRight = false;
 		if (!pseudo) {
 			int pawnWhoDoubleMoved = allCurrPositions.colorBitboards[!currentColor].pawnWhoDoubleMoved;;
-			//cout << "Checking en passant" << endl;
-			//cout << "Pawns who double moved: " << pawnWhoDoubleMoved << endl;
-			//cout << "y: " << y << endl;
-			//cout << "enPassantRow: " << enPassantRow << endl;
 
 			if (pawnWhoDoubleMoved != -1 && y == enPassantRow) {
 				//cout << "Checking stage 2" << endl;
@@ -215,13 +213,14 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				enPassantMove.moveOrCapture = 0;
 				enPassantMove.pieceType = pieceToNumber['p'];
 				enPassantMove.piece = pieceIndex;
+				int forwards = (color) ? -1 : 1;
 
 				if ((pawnPos % 8) == (x - 1)) {
-					cout << "Left" << endl;
+					//cout << "Left" << endl;
 					AllCurrPositions afterEnPassantPos = allCurrPositions;
 					MoveDesc enPassantMoveLeft = enPassantMove;
 
-					enPassantMoveLeft.posOfMove = (x - 1 + (8 * (y+1)));
+					enPassantMoveLeft.posOfMove = (x - 1 + (8 * (y+forwards)));
 					afterEnPassantPos.applyMove(enPassantMoveLeft);
 
 					calcCombinedPos(afterEnPassantPos);
@@ -234,11 +233,11 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 						enPassantIsPosLeft = true;
 					}
 				} else if ((pawnPos % 8) == (x + 1)) {
-					cout << "Right" << endl;
+					//cout << "Right" << endl;
 					AllCurrPositions afterEnPassantPos = allCurrPositions;
 					MoveDesc enPassantMoveRight = enPassantMove;
 
-					enPassantMoveRight.posOfMove = (x + 1 + (8 * (y+1)));
+					enPassantMoveRight.posOfMove = (x + 1 + (8 * (y+ forwards)));
 					afterEnPassantPos.applyMove(enPassantMoveRight);
 
 					calcCombinedPos(afterEnPassantPos);
@@ -264,6 +263,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 			}
 			//For capture blocking and taking reasons, the takes has to be to the side, and the move has to be to where it moves.
 			if (enPassantIsPosLeft) {
+				generatedBitboards.enPassantCapPos = (x - 1 + (y * 8));
 				setBitTo(&capBitboard, x - 1, y, 1);
 				setBitTo(&moveBitboard, x - 1, y + forwards, 1);
 			}
@@ -276,6 +276,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 			}
 			//For capture blocking and taking reasons, the takes has to be to the side, and the move has to be to where it moves.
 			if (enPassantIsPosRight) {
+				generatedBitboards.enPassantCapPos = (x + 1 + (y * 8));
 				setBitTo(&capBitboard, x + 1, y, 1);
 				setBitTo(&moveBitboard, x + 1, y + forwards, 1);
 			}
@@ -524,8 +525,8 @@ AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPiec
 	AllPosMoves allMovesBitboard;
 
 	vector<Bitboard> checkerLocations = checkData.checkerLocations;
-	Bitboard checkerToKingBBMove;
-	Bitboard checkerToKingBBCapture;
+	Bitboard checkerToKingBBMove = ~((Bitboard)0);
+	Bitboard checkerToKingBBCapture = ~((Bitboard)0);
 
 
 	if (numOfCheck == 1) {
@@ -571,15 +572,27 @@ AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPiec
 				Bitboard moveGeneratedBitboard = generatedBitboards.moveBitboard;
 				Bitboard capGeneratedBitboard = generatedBitboards.capBitboard;
 
-				if (numOfCheck == 1) {
-					localMoveBitboard |= (moveGeneratedBitboard & checkerToKingBBMove);
-					//Since it is check, it cannot possibly capture something to block the check except the attacker 
-					// (Changed the function to return it, because I have a feeling its different for en passant)
-					//capBitboard |= (generatedBitboards[1] & checkerToKingBB);
-					localCapBitboard |= (capGeneratedBitboard & checkerToKingBBCapture);
-				} else {
-					localMoveBitboard |= moveGeneratedBitboard;
-					localCapBitboard |= capGeneratedBitboard;
+				//Don't check if checks==1 because the bitboards are full(111111...) if there aren't any checks
+				localMoveBitboard |= (moveGeneratedBitboard & checkerToKingBBMove);
+
+				//Since it is check, it cannot possibly capture something to block the check except the attacker 
+				// (Changed the function to return it, because I have a feeling its different for en passant)
+				localCapBitboard |= (capGeneratedBitboard & checkerToKingBBCapture); 
+				//Only one number(enPassantCapPos) because you can only enPassant max one piece in any position 
+				if (generatedBitboards.enPassantCapPos != -1) {
+					//cout << "phase 1 passed" << endl;
+					//If there is a en passant move
+					int enPassantCapPos = generatedBitboards.enPassantCapPos;
+					int forwards = currColor ? -1 : 1;
+					if (getBit(localCapBitboard, enPassantCapPos % 8, enPassantCapPos / 8) || getBit(localMoveBitboard, enPassantCapPos % 8, (enPassantCapPos / 8)+forwards)) {
+						//cout << "phase 2 passed" << endl;
+						//And if you can either capture that position, or move to the position in front
+
+						//Disable the capture en passant move
+						setBitTo(&localCapBitboard, enPassantCapPos % 8, enPassantCapPos / 8, 0);
+						//And set the move en passant move
+						setBitTo(&localMoveBitboard, enPassantCapPos % 8, (enPassantCapPos / 8) + forwards, 1);
+					}
 				}
 
 				//Might be dangerous deleting elements while looping even when going backwards
@@ -707,22 +720,6 @@ void calcCombinedMoves(AllPosMoves& posMoves) {
 	posMoves.combinedCapBB = allCapBitboard;
 	posMoves.combinedMoveBB = allMoveBitboard;
 }
-
-//vector<int> pieceCoordinates(char piece, char** board) {
-//	vector<int> arr;
-//	for (int i = 0; i < 8; i++) {
-//		for (int j = 0; j < 8; j++) {
-//			if (board[i][j] == piece) {
-//				arr.push_back(i);
-//				arr.push_back(j);
-//			}
-//		}
-//		if (arr[0] != -1) {
-//			break;
-//		}
-//	}
-//	return arr;
-//}
 
 bool checkBounds(int x, int y) {
 	return (x >= 0 && y >= 0 && x < 8 && y < 8);

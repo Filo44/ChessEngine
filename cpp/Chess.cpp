@@ -8,40 +8,56 @@ using namespace std;
 
 
 int main() {
+    cout << "Started" << endl;
     httplib::Server svr;
-    string lFen = "3k4/5ppp/2q5/3p2r1/8/1Q3P2/P4P1P/3R3K"; //Check this position later with the moves below.
-    //string lFen = "1r6/8/1k6/2P5/3r4/3n4/5K2/8";
+    string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+    //string lFen = "3k4/8/8/8/4p3/8/3P4/3K4";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
 
-    allPositionBitboards.colorBitboards[0].canCastleKSide = false;
-    allPositionBitboards.colorBitboards[0].canCastleQSide = false;
-    allPositionBitboards.colorBitboards[1].canCastleKSide = false;
-    allPositionBitboards.colorBitboards[1].canCastleQSide = false;
+    //allPositionBitboards.colorBitboards[0].canCastleKSide = false;
+    //allPositionBitboards.colorBitboards[0].canCastleQSide = false;
+    //allPositionBitboards.colorBitboards[1].canCastleKSide = false;
+    //allPositionBitboards.colorBitboards[1].canCastleQSide = false;
 
     AllPosMoves posMoves = fullMoveGenLoop(1, allPositionBitboards);
-    EvalAndMovesTo searchRes = minMax(allPositionBitboards, 1, 4);
-    cout << "Evaluation: " << searchRes.eval << endl;
+
+    amountOfLeafNodes = 0;
+    captures = 0;
+    enPassant = 0;
+    perft(allPositionBitboards, 1, 5);
+    cout << "amountOfLeafNodes: " << amountOfLeafNodes << endl;
+    cout << "enPassant: " << enPassant << endl;
+    cout << "captures: " << captures << endl;
+    return 1;
+
+    /*cout << "Evaluation: " << searchRes.eval << endl;
 
     cout << "posOfMove: " << searchRes.movesTo[searchRes.movesTo.size()-1].posOfMove << endl;
     cout << "pieceType: " << pieces[searchRes.movesTo[searchRes.movesTo.size() - 1].pieceType] << endl;
-    
-    allPositionBitboards.applyMove(searchRes.movesTo[searchRes.movesTo.size() - 1]);
 
-    posMoves = fullMoveGenLoop(0, allPositionBitboards);
+    allPositionBitboards.applyMove(searchRes.movesTo[searchRes.movesTo.size() - 1]);*/
 
-    //Delete this after
-    
-    /*MoveDesc move;
-    move.pieceMovingColor = 1;
-    move.moveOrCapture = 0;
-    move.piece = 0;
-    move.pieceType = pieceToNumber['p'];
-    move.posOfMove = 35;
-    allPositionBitboards.applyMove(move);
+    //MoveDesc move;
+    //move.pieceMovingColor = 1;
+    //move.moveOrCapture = 0;
+    //move.piece = 0;
+    //move.pieceType = pieceToNumber['p'];
+    //move.posOfMove = 35;
+    //allPositionBitboards.applyMove(move);
 
-    posMoves = fullMoveGenLoop(0, allPositionBitboards);*/
+    //posMoves = fullMoveGenLoop(0, allPositionBitboards);
 
+    //cout << "---------------" << endl;
+    //MoveDesc move1;
+    //move1.pieceMovingColor = 0;
+    //move1.moveOrCapture = 0;
+    //move1.piece = 0;
+    //move1.pieceType = pieceToNumber['p'];
+    //move1.posOfMove = _tzcnt_u64(posMoves.pieceTypes[move.pieceType].posBB[move.piece].moveBitboard);
+    //allPositionBitboards.applyMove(move1);
+    //cout << "---------------" << endl;
 
+    //posMoves = fullMoveGenLoop(1, allPositionBitboards);
 
     // Handle GET requests
     svr.Get("/data", [&allPositionBitboards, &posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
@@ -50,11 +66,16 @@ int main() {
         res.set_header("Access-Control-Allow-Origin", "*");
         delete2DArray(arr, 8);
     });
-    svr.Get("/eval", [searchRes](const httplib::Request& /*req*/, httplib::Response& res) {
-        string eval = to_string(searchRes.eval);
-        res.set_content(eval, "text/plain");
+    //svr.Get("/eval", [searchRes](const httplib::Request& /*req*/, httplib::Response& res) {
+    //    string eval = to_string(searchRes.eval);
+    //    res.set_content(eval, "text/plain");
+    //    res.set_header("Access-Control-Allow-Origin", "*");
+    //});
+    //Dummy function
+    svr.Get("/eval", [](const httplib::Request& /*req*/, httplib::Response& res) {
+        res.set_content("1", "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
-    });
+     });
 
     svr.Get("/getBitboards", [posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
         //cout << allPosMovesToMatrix(posMoves) << endl;
