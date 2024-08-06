@@ -193,7 +193,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 		bool enPassantIsPosLeft = false;
 		bool enPassantIsPosRight = false;
 		if (!pseudo) {
-			int pawnWhoDoubleMoved = allCurrPositions.colorBitboards[!currentColor].pawnWhoDoubleMoved;;
+			int pawnWhoDoubleMoved = allCurrPositions.pawnWhoDoubleMoved;;
 
 			if (pawnWhoDoubleMoved != -1 && y == enPassantRow) {
 				//cout << "Checking stage 2" << endl;
@@ -227,7 +227,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 					hypos++;
 
 					calcCombinedPos(afterEnPassantPos);
-					afterEnPassantPos.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
+					afterEnPassantPos.pawnWhoDoubleMoved = -1;
 					
 					//cout << convertToJSArr(allPositionBitboardsToMatrix(afterEnPassantPos), 8, 8) << endl;
 					//cout << "numOfChecks: " << checkChecks(afterEnPassantPos, currentColor).numOfChecks << endl;
@@ -248,7 +248,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 					hypos++;
 
 					calcCombinedPos(afterEnPassantPos);
-					afterEnPassantPos.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
+					afterEnPassantPos.pawnWhoDoubleMoved = -1;
 					
 					//cout << convertToJSArr(allPositionBitboardsToMatrix(afterEnPassantPos), 8, 8) << endl;
 					//cout << "numOfChecks: " << checkChecks(afterEnPassantPos, currentColor).numOfChecks << endl;
@@ -435,16 +435,16 @@ array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard ki
 AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash) {
 	calcCombinedPos(allPositionBitboards);
 
-	//Resets en passant after full turn
-	int pawnWhoDoubleMovedI = allPositionBitboards.colorBitboards[currentColor].pawnWhoDoubleMoved;
-	if (pawnWhoDoubleMovedI != -1) {
-		//White pawn currently means normal pawn
-		int pawnWhoDoubleMovedPos = _tzcnt_u64(allPositionBitboards.colorBitboards[currentColor].pieceTypes[whitePawn].posBB[pawnWhoDoubleMovedI]);
-		cout << "Removed(XORed): " << EnPassantFileSeed[pawnWhoDoubleMovedPos % 8] << endl;
-		currZobristHash ^= EnPassantFileSeed[pawnWhoDoubleMovedPos % 8];
-		allPositionBitboards.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
-		amOfEnPassantXORRemovals++;
-	}
+	////Resets en passant after full turn
+	//int pawnWhoDoubleMovedI = allPositionBitboards.pawnWhoDoubleMoved;
+	//if (pawnWhoDoubleMovedI != -1) {
+	//	//White pawn currently means normal pawn
+	//	int pawnWhoDoubleMovedPos = _tzcnt_u64(allPositionBitboards.colorBitboards[currentColor].pieceTypes[whitePawn].posBB[pawnWhoDoubleMovedI]);
+	//	cout << "Removed(XORed): " << EnPassantFileSeed[pawnWhoDoubleMovedPos % 8] << endl;
+	//	currZobristHash ^= EnPassantFileSeed[pawnWhoDoubleMovedPos % 8];
+	//	allPositionBitboards.pawnWhoDoubleMoved = -1;
+	//	amOfEnPassantXORRemovals++;
+	//}
 
 
 	//Optimize this:

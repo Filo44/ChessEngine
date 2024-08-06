@@ -7,7 +7,7 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-    int depth = 3;
+    int depth = 5;
     if (argc > 1) {
         //cout << "HI?" << endl;
         //cout << argv[1] << endl;
@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     cout << "Started" << endl;
     httplib::Server svr;
     string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-    //string lFen = "3k4/8/8/8/4p3/8/3P4/3K4";
+    //string lFen = "8/8/8/1k6/3p4/8/2P5/5K2";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
     //allPositionBitboards.colorBitboards[0].canCastleKSide = false;
     //allPositionBitboards.colorBitboards[0].canCastleQSide = false;
@@ -29,6 +29,14 @@ int main(int argc, char* argv[]) {
     ZobristHash currZobristHash = genInitZobristHash(allPositionBitboards);
     cout << "Calculated the zobrist hash" << endl;
     AllPosMoves posMoves = fullMoveGenLoop(1, allPositionBitboards, currZobristHash);
+
+    /*MoveDesc move;
+    move.pieceMovingColor = 1;
+    move.moveOrCapture = 0;
+    move.piece = 0;
+    move.pieceType = pieceToNumber['p'];
+    move.posOfMove = 35; 
+    currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);*/
 
     amountOfLeafNodes = 0;
     captures = 0;
@@ -230,10 +238,10 @@ ZobristHash genInitZobristHash(AllCurrPositions currPositions) {
         }
         //Optimize this, by that I mean change the pawnWhoDoubleMoved to be stored in the AllCurrPositions not in the color,
         // Maybe don't store the piece but rather its position in terms of its file?
-        if (currPositions.colorBitboards[color].pawnWhoDoubleMoved != -1) {
+        if (currPositions.pawnWhoDoubleMoved != -1) {
             //White pawn because I have yet to change it to just store all the pieces in one array instead of per color
             //and white since now it means just pawn
-            int pawnWhoDoubleMovedI = currPositions.colorBitboards[color].pawnWhoDoubleMoved;
+            int pawnWhoDoubleMovedI = currPositions.pawnWhoDoubleMoved;
             int pawnWhoDoubleMovedRef = currPositions.colorBitboards[color].pieceTypes[whitePawn].posBB[pawnWhoDoubleMovedI];
             int enPassantVictimFile = _tzcnt_u64(pawnWhoDoubleMovedRef) % 8;
             //Since it(.pawnWhoDoubleMoved) is the position of the piece who can get taken, that works just as well as a square which can get en passanted into.
