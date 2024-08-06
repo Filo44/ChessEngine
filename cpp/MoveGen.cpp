@@ -18,8 +18,6 @@ unordered_map<char, int> pieceToNumber = {
 		{'p', 5}
 };
 
-
-
 //YOU DON'T STORE THE BITBOARDS GENEREATED BY THIS FUNCTION
 //This just gives you the moves for the pieces which you will feed into the search algorithm
 MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor, Bitboard oppColorAttackingSquares) {
@@ -70,7 +68,8 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 			}
 		}
 
-	}if (pieceType == 'r' || pieceType == 'q') {
+	}
+	if (pieceType == 'r' || pieceType == 'q') {
 		if (x != 0) {
 			MoveMag left = { -1,0,x };
 			dirs.push_back(left);
@@ -221,7 +220,11 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 					MoveDesc enPassantMoveLeft = enPassantMove;
 
 					enPassantMoveLeft.posOfMove = (x - 1 + (8 * (y+forwards)));
-					afterEnPassantPos.applyMove(enPassantMoveLeft);
+
+					//Optimize, don't need to check a zobrist hash if it is a theoretical move. It is en passant though...
+					afterEnPassantPos.applyMove(enPassantMoveLeft, 0);
+					//Remove after
+					hypos++;
 
 					calcCombinedPos(afterEnPassantPos);
 					afterEnPassantPos.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
@@ -238,7 +241,11 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 					MoveDesc enPassantMoveRight = enPassantMove;
 
 					enPassantMoveRight.posOfMove = (x + 1 + (8 * (y+ forwards)));
-					afterEnPassantPos.applyMove(enPassantMoveRight);
+
+					//Optimize, don't need to check a zobrist hash if it is a theoretical move. It is en passant though...
+					afterEnPassantPos.applyMove(enPassantMoveRight, 0);
+					//Remove after
+					hypos++;
 
 					calcCombinedPos(afterEnPassantPos);
 					afterEnPassantPos.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
@@ -425,11 +432,20 @@ array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard ki
 	return { kingMoveBitboard , kingCapBitboard };
 }
 
-AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitboards) {
+AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash) {
 	calcCombinedPos(allPositionBitboards);
 
 	//Resets en passant after full turn
-	allPositionBitboards.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
+	int pawnWhoDoubleMovedI = allPositionBitboards.colorBitboards[currentColor].pawnWhoDoubleMoved;
+	if (pawnWhoDoubleMovedI != -1) {
+		//White pawn currently means normal pawn
+		int pawnWhoDoubleMovedPos = _tzcnt_u64(allPositionBitboards.colorBitboards[currentColor].pieceTypes[whitePawn].posBB[pawnWhoDoubleMovedI]);
+		cout << "Removed(XORed): " << EnPassantFileSeed[pawnWhoDoubleMovedPos % 8] << endl;
+		currZobristHash ^= EnPassantFileSeed[pawnWhoDoubleMovedPos % 8];
+		allPositionBitboards.colorBitboards[currentColor].pawnWhoDoubleMoved = -1;
+		amOfEnPassantXORRemovals++;
+	}
+
 
 	//Optimize this:
 	AllCurrPositions allPositionBitboardsMinusKing = allPositionBitboards;
@@ -467,6 +483,7 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitb
 	kingMoves.capBitboard = legalKingMoves[1];
 	kingMoves.posBitboard = kingPosBB;
 	posMoves.pieceTypes[pieceToNumber['k']].posBB = { kingMoves };
+
 	return posMoves;
 }
 

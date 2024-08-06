@@ -7,9 +7,24 @@
 #include <cstdint>
 #include <unordered_map>
 
+enum piece {
+	whiteRook = 0,
+	whiteKnight = 1,
+	whiteBishop = 2,
+	whiteQueen = 3,
+	whiteKing = 4,
+	whitePawn = 5,
+	blackRook = 6,
+	blackKnight = 7,
+	blackBishop = 8,
+	blackQueen = 9,
+	blackKing = 10,
+	blackPawn = 11,
+};
 
 using namespace std;
 using Bitboard = uint64_t;
+using ZobristHash = uint64_t;
 
 class MoveDesc;
 class PieceTypeCurrPositions;
@@ -23,6 +38,7 @@ class PinnedPieceData;
 class AttackingAndPinnedBBs;
 class MoveCapAndPinnedBBs;
 class CheckData;
+class LeafNodesAndCurrPos;
 
 // char** fenToMatrix(std::string fen);
 void delete2DArray(char **arr, int rows);
@@ -31,6 +47,7 @@ string convertToJSArr(char **arr, int cols, int rows);
 string convertVofBBJS(vector<Bitboard> matrixVector);
 stringstream convertBBJS(Bitboard curBB);
 string allPosMovesToMatrix(AllPosMoves posMoves);
+ZobristHash genInitZobristHash(AllCurrPositions currPositions);
 
 AllCurrPositions fenToPosBitboards(std::string fen);
 char **allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);

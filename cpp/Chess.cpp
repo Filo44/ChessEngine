@@ -2,33 +2,51 @@
 #include "MoveGen.h"
 #include "Classes.h"
 #include "SearchAlgorithm.h"
+#include "ZobristSeed.h"
 
 using namespace std;
 
+int main(int argc, char* argv[]) {
+    int depth = 3;
+    if (argc > 1) {
+        //cout << "HI?" << endl;
+        //cout << argv[1] << endl;
+        //cout << stoi(argv[1]) << endl;
+        depth = stoi(argv[1]);
+    }
+    //cout << "Depth: " << depth << endl;
 
-
-int main() {
     cout << "Started" << endl;
     httplib::Server svr;
     string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     //string lFen = "3k4/8/8/8/4p3/8/3P4/3K4";
     AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
-
     //allPositionBitboards.colorBitboards[0].canCastleKSide = false;
     //allPositionBitboards.colorBitboards[0].canCastleQSide = false;
     //allPositionBitboards.colorBitboards[1].canCastleKSide = false;
     //allPositionBitboards.colorBitboards[1].canCastleQSide = false;
 
-    AllPosMoves posMoves = fullMoveGenLoop(1, allPositionBitboards);
+    ZobristHash currZobristHash = genInitZobristHash(allPositionBitboards);
+    cout << "Calculated the zobrist hash" << endl;
+    AllPosMoves posMoves = fullMoveGenLoop(1, allPositionBitboards, currZobristHash);
 
     amountOfLeafNodes = 0;
     captures = 0;
     enPassant = 0;
-    perft(allPositionBitboards, 1, 5);
-    cout << "amountOfLeafNodes: " << amountOfLeafNodes << endl;
+    totPos = 0;
+    amOfEnPassantXORAdds = 0;
+    amOfEnPassantXORRemovals = 0;
+    hypos = 0;
+    transpositionTable = {};
+    cout << "amountOfLeafNodes: " << perft(allPositionBitboards, 1, depth, currZobristHash) << endl;
     cout << "enPassant: " << enPassant << endl;
     cout << "captures: " << captures << endl;
-    return 1;
+    cout << "totPos: " << totPos << endl;
+    cout << "amOfEnPassantXORAdds : " << amOfEnPassantXORAdds << endl;
+    cout << "amOfEnPassantXORRemovals: " << amOfEnPassantXORRemovals<< endl;
+    cout << "standingEnPassantXORs: " << amOfEnPassantXORAdds - amOfEnPassantXORRemovals<< endl;
+    cout << "hypos: " << hypos << endl;
+    return totPos;
 
     /*cout << "Evaluation: " << searchRes.eval << endl;
 
@@ -78,8 +96,6 @@ int main() {
      });
 
     svr.Get("/getBitboards", [posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
-        //cout << allPosMovesToMatrix(posMoves) << endl;
-        //searchRes.set_content(convertVofBBJS(posMoves.pieceTypes[pieceToNumber['n']].fetchBitboards(false)), "text/plain");
         res.set_content(allPosMovesToMatrix(posMoves), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
@@ -134,7 +150,6 @@ AllCurrPositions fenToPosBitboards(std::string fen) {
 
     return allPositionBitboards;
 }
-
 char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL) {
     char** arr = new char* [8];
     for (int i = 0; i < 8; ++i) {
@@ -160,7 +175,6 @@ char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL) {
     }
     return arr;
 }
-
 string allPosMovesToMatrix(AllPosMoves posMoves) {
     string s="{ \"pieceTypes\": [";
     for (int i = 0; i < 6; i++) {
@@ -191,6 +205,45 @@ string allPosMovesToMatrix(AllPosMoves posMoves) {
     }
     s += "]}";
     return s;
+}
+ZobristHash genInitZobristHash(AllCurrPositions currPositions) {
+    //When the first XOR is done, since it is instantiated to zero, the currZobristHash will become that number.
+    ZobristHash currZobristHash = 0;
+    uint8_t castlingKey = 0b00000000;
+    int enPassantFile = -1;
+
+    for (int color = 0; color < 2; color++) {
+        for (int pieceType = 0; pieceType < 6; pieceType++) {
+            int amOfPieces = currPositions.colorBitboards[color].pieceTypes[pieceType].posBB.size();
+            for (int piece = 0; piece < amOfPieces; piece++) {
+                int pos = _tzcnt_u64(currPositions.colorBitboards[color].pieceTypes[pieceType].posBB[piece]);
+                currZobristHash ^= ZobristSeed[color ? pieceType + 6 : pieceType][pos];
+            }
+        }
+        //If it is white it multiplies everything by 4, or shifts it up twice
+        int colorMult = color ? 4 : 0;
+        if (currPositions.colorBitboards[color].canCastleKSide) {
+            castlingKey |= (0b00000001 * colorMult);
+        }
+        if (currPositions.colorBitboards[color].canCastleQSide) {
+            castlingKey |= (0b00000010 * colorMult);
+        }
+        //Optimize this, by that I mean change the pawnWhoDoubleMoved to be stored in the AllCurrPositions not in the color,
+        // Maybe don't store the piece but rather its position in terms of its file?
+        if (currPositions.colorBitboards[color].pawnWhoDoubleMoved != -1) {
+            //White pawn because I have yet to change it to just store all the pieces in one array instead of per color
+            //and white since now it means just pawn
+            int pawnWhoDoubleMovedI = currPositions.colorBitboards[color].pawnWhoDoubleMoved;
+            int pawnWhoDoubleMovedRef = currPositions.colorBitboards[color].pieceTypes[whitePawn].posBB[pawnWhoDoubleMovedI];
+            int enPassantVictimFile = _tzcnt_u64(pawnWhoDoubleMovedRef) % 8;
+            //Since it(.pawnWhoDoubleMoved) is the position of the piece who can get taken, that works just as well as a square which can get en passanted into.
+            currZobristHash ^= EnPassantFileSeed[enPassantVictimFile];
+        }
+    }
+
+    currZobristHash ^= CastlingSeed[castlingKey];
+
+    return currZobristHash; 
 }
 
 void delete2DArray(char** arr, int rows) {
@@ -271,3 +324,4 @@ stringstream convertBBJS(Bitboard curBB) {
     ss << "]";
     return ss;
 }
+
