@@ -24,8 +24,14 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 	Bitboard oppColorPosBBMinusKing = allCurrPositions.colorBitboards[!currentColor].colorCombinedBB;
 	if (pseudo) {
 		//Remove king from oppColorPosBBMinusKing
-		int oppKingPos = _tzcnt_u64(allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['k']].posBB[0]);
-		setBitTo(&oppColorPosBBMinusKing, oppKingPos % 8, oppKingPos / 8, 0);
+		//cout << convertVofBBJS(allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['k']].posBB) << endl;
+		if (allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['k']].posBB.size() == 0) {
+			cout << "HUH?? No opp colored king, fix later" << endl;
+			//cout << "All pos: " << endl << convertToString(allPositionBitboardsToMatrix(allCurrPositions), 8, 8) << endl;
+		} else {
+			int oppKingPos = _tzcnt_u64(allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['k']].posBB[0]);
+			setBitTo(&oppColorPosBBMinusKing, oppKingPos, 0);
+		}
 	}
 
 	Bitboard thisColorPosBB = allCurrPositions.colorBitboards[currentColor].colorCombinedBB;
@@ -601,12 +607,12 @@ AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPiec
 					//If there is a en passant move
 					int enPassantCapPos = generatedBitboards.enPassantCapPos;
 					int forwards = currColor ? -1 : 1;
-					if (getBit(localCapBitboard, enPassantCapPos % 8, enPassantCapPos / 8) || getBit(localMoveBitboard, enPassantCapPos % 8, (enPassantCapPos / 8)+forwards)) {
+					if (getBit(localCapBitboard, enPassantCapPos) || getBit(localMoveBitboard, enPassantCapPos % 8, (enPassantCapPos / 8)+forwards)) {
 						//cout << "phase 2 passed" << endl;
 						//And if you can either capture that position, or move to the position in front
 
 						//Disable the capture en passant move
-						setBitTo(&localCapBitboard, enPassantCapPos % 8, enPassantCapPos / 8, 0);
+						setBitTo(&localCapBitboard, enPassantCapPos, 0);
 						//And set the move en passant move
 						setBitTo(&localMoveBitboard, enPassantCapPos % 8, (enPassantCapPos / 8) + forwards, 1);
 					}
@@ -616,7 +622,7 @@ AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPiec
 				for (int i = pinnedPieces.size() - 1; i >= 0; i--) {
 					PinnedPieceData pinnedPieceInstance = pinnedPieces[i];
 					//cout << "pinnedPiecePos" << pinnedPieceInstance.pos;
-					if (getBit(piece, pinnedPieceInstance.pos % 8, pinnedPieceInstance.pos / 8)) {
+					if (getBit(piece, pinnedPieceInstance.pos)) {
 						//cout << "Pinned piece, x:" << pinnedPieceInstance.pos % 8 << ", y: " << pinnedPieceInstance.pos / 8 << endl;
 						localMoveBitboard &= pinnedPieceInstance.pushMask;
 						localCapBitboard &= pinnedPieceInstance.captureMask;
@@ -694,7 +700,7 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor) {
 			numOfChecks++;
 			int checkerCurrPosition = _tzcnt_u64(checkersBB);
 			checkerLocations.push_back(1ULL << checkerCurrPosition);
-			setBitTo(&checkersBB, checkerCurrPosition % 8, checkerCurrPosition / 8, 0);
+			setBitTo(&checkersBB, checkerCurrPosition, 0);
 		}
 	}
 	//numOfChecks and checkerLocations are references thus I can just return res.

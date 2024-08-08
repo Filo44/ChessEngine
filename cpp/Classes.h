@@ -8,19 +8,28 @@ extern int amountOfLeafNodes;
 extern int captures;
 extern int enPassant;
 extern int totPos;
-extern int amOfEnPassantXORAdds;
-extern int amOfEnPassantXORRemovals;
+//extern int amOfEnPassantXORAdds;
+//extern int amOfEnPassantXORRemovals;
 extern int hypos;
 extern unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTable;
 
 
 constexpr auto CAPTURE = 1;
-constexpr auto MOVE = 1;
+constexpr auto MOVE = 0;
+
+constexpr auto PIECE_TYPE = 0;
+constexpr auto PIECE = 1;
+
 
 using namespace std;
 
 const char pieces[6] = { 'r','n','b','q', 'k','p' };
 extern std::unordered_map<char, int> pieceToNumber;
+
+struct PieceInfo {
+	int pieceType;
+	int piece;
+};
 
 class MoveDesc {
 public:
@@ -121,6 +130,41 @@ public:
 	OneColorCurrPositions colorBitboards[2];
 	Bitboard allPiecesCombBitboard;
 	int pawnWhoDoubleMoved = -1;
+	PieceInfo searchPieceByPos(int pos, bool colorOfPiece) {
+		int pieceType = -1;
+		for (int i = 0; i < 6; i++) {
+			if (getBit(colorBitboards[colorOfPiece].pieceTypes[i].pieceTypeCombinedBB, pos)) {
+				pieceType = i;
+				break;
+			}
+		}
+		if (pieceType == -1) {
+			cout << "ERROR! piecetype = -1" << endl;
+			cout << convertToString(allPositionBitboardsToMatrix(*this), 8, 8) << endl;
+			cout << "Damn you breakpoints!" << endl;
+		}
+		int piece = -1;
+		for (int j = colorBitboards[colorOfPiece].pieceTypes[pieceType].posBB.size() - 1; j >= 0; j--) {
+			if (getBit(colorBitboards[colorOfPiece].pieceTypes[pieceType].posBB[j], pos)) {
+				piece = j;
+				break;
+			}
+		}
+		if (piece == -1) {
+			cout << "ERROR! piece = -1" << endl;
+		}
+		return { pieceType, piece };
+	}
+	int searchPieceByPosAndType(int pos, int pieceType, bool colorOfPiece) {
+		int piece = -1;
+		for (int j = colorBitboards[colorOfPiece].pieceTypes[pieceType].posBB.size() - 1; j >= 0; j--) {
+			if (getBit(colorBitboards[colorOfPiece].pieceTypes[pieceType].posBB[j], pos)) {
+				piece = j;
+				break;
+			}
+		}
+		return piece;
+	}
 	ZobristHash applyMove(MoveDesc move, ZobristHash currZobristHash) {
 		Bitboard& thisPieceBitboard = colorBitboards[move.pieceMovingColor].pieceTypes[move.pieceType].posBB[move.piece];
 		int pieceLocation = _tzcnt_u64(thisPieceBitboard);
@@ -145,7 +189,7 @@ public:
 			if (abs((moveToY - pieceLocationY)) == 2) {
 				pawnWhoDoubleMovedBuffer = move.piece;
 				//cout << "Added(XORed) the number for file: " << moveToX << endl;
-				amOfEnPassantXORAdds++;
+				//amOfEnPassantXORAdds++;
 				currZobristHash ^= EnPassantFileSeed[moveToX];
 			}
 			//If it is a capture en passant you should move it one forwards
@@ -259,35 +303,15 @@ public:
 			//Not really a binary search, still close enough
 			//Please do optimize if you(I speak to future-me in 2nd person) can
 
-			int pieceType = -1;
-			for (int i = 0; i < 6; i++) {
-				//cout << "Combined BB: " << (bitset<64>)colorBitboards[!color].pieceTypes[i].pieceTypeCombinedBB << endl;
-				if (getBit(colorBitboards[!color].pieceTypes[i].pieceTypeCombinedBB, moveToX, moveToY)) {
-					pieceType = i;
-					break;
-				}
-			}
-			if (pieceType == -1) {
-				cout << "ERROR! piecetype = -1" << endl;
-				cout << "HI!" << endl;
-			}
-			int piece = -1;
-			for (int j = colorBitboards[!color].pieceTypes[pieceType].posBB.size() - 1; j >= 0; j--) {
-				if (getBit(colorBitboards[!color].pieceTypes[pieceType].posBB[j], moveToX, moveToY)) {
-					piece = j;
-					break;
-				}
-			}
-			if (piece == -1) {
-				cout << "ERROR! piece = -1" << endl;
-				cout << "HI!" << endl;
-			}
 			//cout << "pieceType:" <<pieceType << endl;
 			//cout << "piece:" <<piece << endl;
-			PieceTypeCurrPositions& pieceTypePiece = colorBitboards[!color].pieceTypes[pieceType];
+			//(moveToX + (moveToY*8))!=move.posOfMove OK?! BECAUSE IF IT EN PASSANT I ONLY CHANGE THE MOVETOY
+			PieceInfo toCapturePiece = searchPieceByPos(moveToX + (moveToY*8), !color);
+
+			PieceTypeCurrPositions& pieceTypePiece = colorBitboards[!color].pieceTypes[toCapturePiece.pieceType];
 			//cout << "firstEl: " << pieceTypePiece.posBB[0] << endl;;
-			pieceTypePiece.posBB.erase(pieceTypePiece.posBB.begin() + piece);
-			currZobristHash ^= ZobristSeed[!color ? pieceType + 6 : pieceType][move.posOfMove];
+			pieceTypePiece.posBB.erase(pieceTypePiece.posBB.begin() + toCapturePiece.piece);
+			currZobristHash ^= ZobristSeed[!color ? toCapturePiece.pieceType + 6 : toCapturePiece.pieceType][move.posOfMove];
 		}
 
 		int pawnWhoDoubleMovedI = pawnWhoDoubleMoved;
@@ -296,7 +320,7 @@ public:
 			int pawnWhoDoubleMovedPos = _tzcnt_u64(colorBitboards[move.pieceMovingColor].pieceTypes[whitePawn].posBB[pawnWhoDoubleMovedI]);
 			//cout << "Removed(XORed): " << EnPassantFileSeed[pawnWhoDoubleMovedPos % 8] << endl;
 			currZobristHash ^= EnPassantFileSeed[pawnWhoDoubleMovedPos % 8];
-			amOfEnPassantXORRemovals++;
+			//amOfEnPassantXORRemovals++;
 		}
 		//Assigns the buffer, if the buffer hasn't been changed since instantiation it is -1 as that is the instantiated value.
 		pawnWhoDoubleMoved = pawnWhoDoubleMovedBuffer;
@@ -313,20 +337,18 @@ public:
 	vector<MoveDesc> movesTo = {};
 };
 
-//Debug class, remove later. (Optimize)
 class LeafNodesAndCurrPos {
 public:
 	int leafNodes;
-	string allPositionMatrix;
-	bool canCastleWQ;
-	bool canCastleWK;
-	bool canCastleBQ;
-	bool canCastleBK;
-	int doubleMovedPawn;
-	bool colorToMove;
 	int depth;
 	//LeafNodesAndCurrPos(int leafNodesIn, char** allPositionMatrixIn) { // Constructor with parameters
 	//	leafNodes = leafNodesIn;
 	//	allPositionMatrix = allPositionMatrixIn;
 	//}
+};
+
+class PosAndColor {
+public:
+	AllCurrPositions allCurrPositions;
+	bool color;
 };

@@ -23,6 +23,7 @@ class AttackingAndPinnedBBs;
 class MoveCapAndPinnedBBs;
 class CheckData;
 class LeafNodesAndCurrPos;
+class PosAndColor;
 
 class PieceTypeCurrPositions;
 class OneColorCurrPositions;

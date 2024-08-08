@@ -8,53 +8,60 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     int depth = 5;
+    string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
     if (argc > 1) {
-        //cout << "HI?" << endl;
-        //cout << argv[1] << endl;
-        //cout << stoi(argv[1]) << endl;
         depth = stoi(argv[1]);
+        if (argc > 2) {
+            lFen = argv[2];
+        }
     }
-    //cout << "Depth: " << depth << endl;
 
     cout << "Started" << endl;
     httplib::Server svr;
-    string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-    //string lFen = "8/8/8/1k6/3p4/8/2P5/5K2";
-    AllCurrPositions allPositionBitboards = fenToPosBitboards(lFen);
-    //allPositionBitboards.colorBitboards[0].canCastleKSide = false;
-    //allPositionBitboards.colorBitboards[0].canCastleQSide = false;
-    //allPositionBitboards.colorBitboards[1].canCastleKSide = false;
-    //allPositionBitboards.colorBitboards[1].canCastleQSide = false;
+
+    PosAndColor gameState = fenToPosBitboards(lFen);
+    AllCurrPositions allPositionBitboards = gameState.allCurrPositions;
+    bool color = gameState.color;
+
+    //cout << "allPositionBitboards.colorBitboards[0].canCastleKSide: " << allPositionBitboards.colorBitboards[0].canCastleKSide << endl;
+    //cout << "allPositionBitboards.colorBitboards[1].canCastleKSide: " << allPositionBitboards.colorBitboards[1].canCastleKSide << endl;
+    //cout << "Pawn who double moved: " << allPositionBitboards.pawnWhoDoubleMoved << endl;
+    //cout << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
 
     ZobristHash currZobristHash = genInitZobristHash(allPositionBitboards);
     cout << "Calculated the zobrist hash" << endl;
-    AllPosMoves posMoves = fullMoveGenLoop(1, allPositionBitboards, currZobristHash);
+    //cout << "-----------------" << endl;
+    AllPosMoves posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
 
+    
     /*MoveDesc move;
     move.pieceMovingColor = 1;
     move.moveOrCapture = 0;
     move.piece = 0;
     move.pieceType = pieceToNumber['p'];
     move.posOfMove = 35; 
-    currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);*/
+    currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
+
+    posMoves = fullMoveGenLoop(!color, allPositionBitboards, currZobristHash);*/
 
     amountOfLeafNodes = 0;
     captures = 0;
     enPassant = 0;
     totPos = 0;
-    amOfEnPassantXORAdds = 0;
-    amOfEnPassantXORRemovals = 0;
+    //amOfEnPassantXORAdds = 0;
+    //amOfEnPassantXORRemovals = 0;
     hypos = 0;
     transpositionTable = {};
-    cout << "amountOfLeafNodes: " << perft(allPositionBitboards, 1, depth, currZobristHash) << endl;
+    int actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash);
+    cout << "actualAmountOfLeafNodes: " << actualAmountOfLeafNodes << endl;
     cout << "enPassant: " << enPassant << endl;
     cout << "captures: " << captures << endl;
     cout << "totPos: " << totPos << endl;
-    cout << "amOfEnPassantXORAdds : " << amOfEnPassantXORAdds << endl;
-    cout << "amOfEnPassantXORRemovals: " << amOfEnPassantXORRemovals<< endl;
-    cout << "standingEnPassantXORs: " << amOfEnPassantXORAdds - amOfEnPassantXORRemovals<< endl;
+    //cout << "amOfEnPassantXORAdds : " << amOfEnPassantXORAdds << endl;
+    //cout << "amOfEnPassantXORRemovals: " << amOfEnPassantXORRemovals<< endl;
+    //cout << "standingEnPassantXORs: " << amOfEnPassantXORAdds - amOfEnPassantXORRemovals<< endl;
     cout << "hypos: " << hypos << endl;
-    return totPos;
+    return actualAmountOfLeafNodes;
 
     /*cout << "Evaluation: " << searchRes.eval << endl;
 
@@ -115,7 +122,8 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-AllCurrPositions fenToPosBitboards(std::string fen) {
+PosAndColor fenToPosBitboards(std::string fen) {
+    PosAndColor res = PosAndColor();
     OneColorCurrPositions blackBitboard;
     OneColorCurrPositions whiteBitboard;
     AllCurrPositions allPositionBitboards;
@@ -130,10 +138,17 @@ AllCurrPositions fenToPosBitboards(std::string fen) {
         }
     }
 
+    int maxI = -1;
     int actualPos = -1;
     for (int i = 0; i < fen.length(); i++) {
         if (fen[i] == '/') {
             continue;
+        } else if (fen[i] == ' ') {
+            maxI = i;
+            break;
+        }
+        if (i == fen.length() - 1) {
+            cout << "What? No space detected" << endl;
         }
         actualPos++;
         //std::cout << "actualPos:" << actualPos << std::endl;
@@ -156,7 +171,67 @@ AllCurrPositions fenToPosBitboards(std::string fen) {
         }
     }
 
-    return allPositionBitboards;
+    allPositionBitboards.colorBitboards[0].canCastleKSide = false;
+    allPositionBitboards.colorBitboards[0].canCastleQSide = false;
+    allPositionBitboards.colorBitboards[1].canCastleKSide = false;
+    allPositionBitboards.colorBitboards[1].canCastleQSide = false;
+    //cout << "maxI + 1:" << maxI + 1 << endl;
+    //cout << "fen[maxI + 1]:" << fen[maxI + 1] << endl;
+    //If no space detected, i.e. maxI=-1, it goes to the default values
+    if (maxI != -1) {
+        if (fen[maxI + 1] == 'b') {
+            //cout << "Black" << endl;
+            res.color = 0;
+        } else {
+            //cout << "White" << endl;
+            res.color = 1;
+        }
+        int maxJ = -1;
+        if (fen[maxI + 3] == '-') {
+            //cout << "No castling rights" << endl;
+            maxJ = 4;
+        } else {
+            for (int j = 3; j < 7; j++) {
+                char el = fen[maxI + j];
+                if (el == ' ') {
+                    maxJ = j;
+                    break;
+                }
+                bool castleRightsColor = isupper(el);
+                if (tolower(el) == 'k') {
+                    //cout << (castleRightsColor ? "White" : "Black") << " can castle king side. " << endl;
+                    allPositionBitboards.colorBitboards[castleRightsColor].canCastleKSide = true;
+                } else {
+                    //cout << (castleRightsColor ? "White" : "Black") << " can castle queen side. " << endl;
+                    allPositionBitboards.colorBitboards[castleRightsColor].canCastleQSide = true;
+                }
+                if (j == 6) {
+                    maxJ = 7;
+                }
+            }
+        }
+        if (fen[maxI + maxJ + 1] != '-') {
+            char file = fen[maxI + maxJ + 1];
+            //cout << "file: " << file << endl;
+
+            int rank = fen[maxI + maxJ + 2] - '0';
+            //cout << "rankChar: " << fen[maxI + maxJ + 2]  << endl;
+
+            int vulnY = 8 - rank;
+
+            //Backwards for white is + 1
+            int y = res.color ? vulnY + 1 : vulnY - 1;
+            int x = file - 97;
+            //cout << "En passant. X: "<<x<<", Y:" << y<<". " << endl;
+            //cout << "!res.color: " << !res.color << endl;
+            allPositionBitboards.pawnWhoDoubleMoved = allPositionBitboards.searchPieceByPosAndType(x + (y * 8), whitePawn, !res.color);
+        }
+    } else {
+        res.color = 1;
+    }
+
+    res.allCurrPositions = allPositionBitboards;
+    return res;
 }
 char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL) {
     char** arr = new char* [8];
@@ -171,8 +246,7 @@ char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL) {
     //No clue why each piece stores an entire bitboard when there can only be one bit which is on. Optimize this later.
     for (int color = 0; color < 2; ++color) {
         for (int pieceI = 0; pieceI < 6; ++pieceI) {
-            //Add const before the Bitboard bitboard, optimize
-            for (Bitboard bitboard : allPositionBitboardsL.colorBitboards[color].pieceTypes[pieceI].posBB) {
+            for (const Bitboard bitboard : allPositionBitboardsL.colorBitboards[color].pieceTypes[pieceI].posBB) {
                 //Finds the last, and in this case only, 1
                 int pos = _tzcnt_u64(bitboard);
                 
@@ -236,8 +310,8 @@ ZobristHash genInitZobristHash(AllCurrPositions currPositions) {
         if (currPositions.colorBitboards[color].canCastleQSide) {
             castlingKey |= (0b00000010 * colorMult);
         }
-        //Optimize this, by that I mean change the pawnWhoDoubleMoved to be stored in the AllCurrPositions not in the color,
-        // Maybe don't store the piece but rather its position in terms of its file?
+
+        // Maybe don't store the piece but rather its position in terms of its file (Optimize)?
         if (currPositions.pawnWhoDoubleMoved != -1) {
             //White pawn because I have yet to change it to just store all the pieces in one array instead of per color
             //and white since now it means just pawn
@@ -319,7 +393,7 @@ stringstream convertBBJS(Bitboard curBB) {
         if (bit % 8 == 0) {
             ss << "[";
         }
-        ss << (getBit(curBB, bit % 8, bit / 8) ? "true" : "false");
+        ss << (getBit(curBB, bit) ? "true" : "false");
         if (bit % 8 != 7) {
             ss << ",";
         } else {

@@ -3,22 +3,22 @@ int amountOfLeafNodes = 0;
 int captures = 0;
 int enPassant = 0;
 int totPos = 0;
-int amOfEnPassantXORAdds = 0;
-int amOfEnPassantXORRemovals = 0;
+//int amOfEnPassantXORAdds = 0;
+//int amOfEnPassantXORRemovals = 0;
 int hypos = 0;
 unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTable = {};
 
-ostream& operator<<(std::ostream& os, const LeafNodesAndCurrPos& obj) {
-	//os << "Leaf Nodes: " << obj.leafNodes << std::endl;
-	os << "All Position Matrix: " << obj.allPositionMatrix << std::endl;
-	os << "Can Castle WQ: " << obj.canCastleWQ << std::endl;
-	os << "Can Castle WK: " << obj.canCastleWK << std::endl;
-	os << "Can Castle BQ: " << obj.canCastleBQ << std::endl;
-	os << "Can Castle BK: " << obj.canCastleBK << std::endl;
-	os << "Double Moved Pawn: " << obj.doubleMovedPawn << std::endl;
-	os << "Color to Move: " << obj.colorToMove << std::endl;
-	return os;
-}
+//ostream& operator<<(std::ostream& os, const LeafNodesAndCurrPos& obj) {
+//	//os << "Leaf Nodes: " << obj.leafNodes << std::endl;
+//	os << "All Position Matrix: " << obj.allPositionMatrix << std::endl;
+//	os << "Can Castle WQ: " << obj.canCastleWQ << std::endl;
+//	os << "Can Castle WK: " << obj.canCastleWK << std::endl;
+//	os << "Can Castle BQ: " << obj.canCastleBQ << std::endl;
+//	os << "Can Castle BK: " << obj.canCastleBK << std::endl;
+//	os << "Double Moved Pawn: " << obj.doubleMovedPawn << std::endl;
+//	os << "Color to Move: " << obj.colorToMove << std::endl;
+//	return os;
+//}
 
 
 //EvalAndMovesTo minMax(AllCurrPositions allCurrPositions, bool color, int depthCD) {
@@ -54,7 +54,7 @@ ostream& operator<<(std::ostream& os, const LeafNodesAndCurrPos& obj) {
 //
 //						int posOfNextBit = _tzcnt_u64(currBitboard);
 //						thisMove.posOfMove = posOfNextBit;
-//						setBitTo(&currBitboard, posOfNextBit % 8, posOfNextBit / 8, 0);
+//						setBitTo(&currBitboard, posOfNextBit, 0);
 //
 //						AllCurrPositions newPositionsAfterMove = allCurrPositions;
 //						newPositionsAfterMove.applyMove(thisMove);
@@ -86,68 +86,10 @@ ostream& operator<<(std::ostream& os, const LeafNodesAndCurrPos& obj) {
 //}
 
 int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash) {
-	//REMOVE AFTER
-	string allPositionMatrix = convertToString(allPositionBitboardsToMatrix(allCurrPositions), 8, 8);
-	if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD==transpositionTable[currZobristHash].depth) {
-		ZobristHash reCalcedHash = genInitZobristHash(allCurrPositions);
-		if (reCalcedHash != currZobristHash) {
-			cout << "currZobristHash doesn't match the non-iteratively calculated one. " << endl;
-			cout << "currZobristHash: " << currZobristHash << endl;
-			cout << "reCalcedHash: " << reCalcedHash << endl;
-			cout << "difference: " << (bitset<64>)~(currZobristHash ^ reCalcedHash) << endl;
-			
-			cout << endl;
-			cout << endl;
-
-			cout << "All Position Matrix: " << allPositionMatrix << endl;
-			cout << "Can Castle WQ: " << allCurrPositions.colorBitboards[1].canCastleQSide << endl;
-			cout << "Can Castle WK: " << allCurrPositions.colorBitboards[1].canCastleKSide << endl;
-			cout << "Can Castle BQ: " << allCurrPositions.colorBitboards[0].canCastleQSide << endl;
-			cout << "Can Castle BK: " << allCurrPositions.colorBitboards[0].canCastleKSide << endl;
-			cout << "Double Moved Pawn: " << allCurrPositions.pawnWhoDoubleMoved << endl;
-			cout << "Color to Move: " << color << endl;
-
-			cout << "----------------" << endl;
-			cout << "Matched with: " << transpositionTable[currZobristHash] << endl;
-			cout << "-----------------------------------------------" << endl;
-			cout << endl;
-		}
-		if (transpositionTable[currZobristHash].allPositionMatrix != allPositionMatrix) {
-			cout << "Actual curr TT: " << allPositionMatrix << endl;
-			cout << "Matched with: " << transpositionTable[currZobristHash].allPositionMatrix << endl;
-			cout << "-----------------------------------" << endl;
-		} else {
-			bool oneTriggered = false;
-			if (allCurrPositions.colorBitboards[1].canCastleKSide != transpositionTable[currZobristHash].canCastleWK) {
-				cout << "Castling doesn't match!" << "White castling king-side doesn't match. " << endl;
-				oneTriggered = true;
-			}
-			if (allCurrPositions.colorBitboards[1].canCastleQSide != transpositionTable[currZobristHash].canCastleWQ) {
-				cout << "Castling doesn't match!" << "White castling queen-side doesn't match. " << endl;
-				oneTriggered = true;
-			}
-			if (allCurrPositions.colorBitboards[0].canCastleKSide != transpositionTable[currZobristHash].canCastleBK) {
-				cout << "Castling doesn't match!" << "Black castling king-side doesn't match. " << endl;
-				oneTriggered = true;
-			}
-			if (allCurrPositions.colorBitboards[0].canCastleQSide != transpositionTable[currZobristHash].canCastleBQ) {
-				cout << "Castling doesn't match!" << "Black castling queen-side doesn't match. " << endl;
-				oneTriggered = true;
-			}
-			if (allCurrPositions.pawnWhoDoubleMoved != transpositionTable[currZobristHash].doubleMovedPawn) {
-				cout << "allCurrPositions.pawnWhoDoubleMoved: " << allCurrPositions.pawnWhoDoubleMoved << endl;
-				cout << "transpositionTable[currZobristHash].doubleMovedPawn: " << transpositionTable[currZobristHash].doubleMovedPawn << endl;
-				cout << "--" << endl;
-				oneTriggered = true;
-			}
-			if (color != transpositionTable[currZobristHash].colorToMove) {
-				cout << "Color to move doesn't match, tf?" << endl;
-				oneTriggered = true;
-			}
-			if (oneTriggered) {
-				cout << "------------------------------------" << endl;
-			}
-		}
+	//Loose TT, leaf nodes and other stats won't be the same
+	//if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD==transpositionTable[currZobristHash].depth)
+	//Strict TT
+	if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD <= transpositionTable[currZobristHash].depth) {
 		return transpositionTable[currZobristHash].leafNodes;
 	}
 	depthCD--;
@@ -186,7 +128,7 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 							enPassant++;
 						}
 						thisMove.posOfMove = posOfNextBit;
-						setBitTo(&currBitboard, posOfNextBit % 8, posOfNextBit / 8, 0);
+						setBitTo(&currBitboard, posOfNextBit, 0);
 
 						AllCurrPositions newPositionsAfterMove = allCurrPositions;
 						ZobristHash localZobristHash = newPositionsAfterMove.applyMove(thisMove, currZobristHash);
@@ -205,15 +147,8 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 
 		}
 		LeafNodesAndCurrPos ttData;
-		ttData.allPositionMatrix = allPositionMatrix;
 		ttData.leafNodes = totalOfLeafsCaused;
-		ttData.canCastleWQ = allCurrPositions.colorBitboards[1].canCastleQSide;
-		ttData.canCastleWK = allCurrPositions.colorBitboards[1].canCastleKSide;
-		ttData.canCastleBQ = allCurrPositions.colorBitboards[0].canCastleQSide;
-		ttData.canCastleBK = allCurrPositions.colorBitboards[0].canCastleKSide;
-		ttData.doubleMovedPawn = allCurrPositions.pawnWhoDoubleMoved;
 		ttData.depth = depthCD;
-		ttData.colorToMove = color;
 		transpositionTable[currZobristHash] = ttData;
 		return totalOfLeafsCaused;
 	} else {

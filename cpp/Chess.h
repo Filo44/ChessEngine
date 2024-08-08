@@ -39,6 +39,7 @@ class AttackingAndPinnedBBs;
 class MoveCapAndPinnedBBs;
 class CheckData;
 class LeafNodesAndCurrPos;
+class PosAndColor;
 
 // char** fenToMatrix(std::string fen);
 void delete2DArray(char **arr, int rows);
@@ -49,7 +50,7 @@ stringstream convertBBJS(Bitboard curBB);
 string allPosMovesToMatrix(AllPosMoves posMoves);
 ZobristHash genInitZobristHash(AllCurrPositions currPositions);
 
-AllCurrPositions fenToPosBitboards(std::string fen);
+PosAndColor fenToPosBitboards(std::string fen);
 char **allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
 
 inline void setBitTo(Bitboard *initBB, int posX, int posY, bool value)
@@ -63,7 +64,22 @@ inline void setBitTo(Bitboard *initBB, int posX, int posY, bool value)
 		*initBB |= (1ULL << posX + (posY * 8));
 	}
 }
+inline void setBitTo(Bitboard* initBB, int pos, bool value)
+{
+	if (value == 0)
+	{
+		*initBB &= ~(1ULL << pos);
+	} else
+	{
+		*initBB |= (1ULL << pos);
+	}
+}
+
 inline bool getBit(Bitboard bb, int posX, int posY)
 {
 	return (bb >> posX + (posY * 8)) & 1;
+}
+inline bool getBit(Bitboard bb, int pos)
+{
+	return (bb >> pos) & 1;
 }
