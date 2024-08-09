@@ -359,3 +359,7 @@ public:
 };
 
 class PosAndColor {
+public:
+	AllCurrPositions allCurrPositions;
+	bool color;
+};

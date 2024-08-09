@@ -405,4 +405,6 @@ stringstream convertBBJS(Bitboard curBB) {
         }
     }
     ss << "]";
-    return
+    return ss;
+}
+
