@@ -20,7 +20,7 @@ unordered_map<char, int> pieceToNumber = {
 
 //YOU DON'T STORE THE BITBOARDS GENEREATED BY THIS FUNCTION
 //This just gives you the moves for the pieces which you will feed into the search algorithm
-MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor, Bitboard oppColorAttackingSquares) {
+MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor, bool pawnMorphing ,Bitboard oppColorAttackingSquares) {
 	Bitboard oppColorPosBBMinusKing = allCurrPositions.colorBitboards[!currentColor].colorCombinedBB;
 	if (pseudo) {
 		//Remove king from oppColorPosBBMinusKing
@@ -43,8 +43,6 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 	MoveCapAndPinnedBBs generatedBitboards;
 
 	char pieceType = tolower(piece);
-	//White:true, black:false
-	bool color = !(piece == pieceType);
 	//Two ifs in case it is a queen and then just else ifs
 
 	//Sliding Pieces
@@ -97,7 +95,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 	if (!dirs.empty()) {
 		bool kingExists = (allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['k']].posBB.size()) != 0;
 		for (MoveMag dir : dirs) {
-			array<Bitboard, 2> res = dirToBitboard(dir, oppColorPosBBMinusKing, thisColorPosBB, x, y);
+			array<Bitboard, 2> res = dirToBitboard(dir, oppColorPosBBMinusKing, thisColorPosBB, x, y, pseudo);
 			Bitboard localMoveBitboard = res[0];
 			Bitboard localCapBitboard = res[1];
 			//cout << "CurrColor: " << currentColor<< endl;
@@ -108,13 +106,13 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				int kingPos = _tzcnt_u64(kingPosBB);
 				//cout << "---------------" << endl;
 				//cout << "Generating king opp BBs, " << endl;
-				//Same opp and this color bitboards as you want to check if they capture a piece of the same color.
-				array<Bitboard, 2> kingOppBBs = dirToBitboard(kingOppDir(dir, kingPos), oppColorPosBBMinusKing, thisColorPosBB, kingPos % 8, kingPos / 8);
+				//Same opp and this currentColor bitboards as you want to check if they capture a piece of the same currentColor.
+				array<Bitboard, 2> kingOppBBs = dirToBitboard(kingOppDir(dir, kingPos), oppColorPosBBMinusKing, thisColorPosBB, kingPos % 8, kingPos / 8, pseudo);
 				//cout << "Finished generating king opp BBs, " << endl;
 
 				Bitboard kingMoveBitboard = kingOppBBs[0];
 				Bitboard kingCapBitboard = kingOppBBs[1];
-				//cout << "Curr color: " << (int)currentColor << endl;
+				//cout << "Curr currentColor: " << (int)currentColor << endl;
 				//cout << "pieceType: " << piece << endl;
 				//cout << "oppKingPos: " << kingPos << endl;
 				//cout << "King opposite dir XInc:" << kingOppDir(dir,kingPos)[0] << ", YInc:" << kingOppDir(dir, kingPos)[1] << endl;
@@ -154,19 +152,25 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				//cout << "In bounds" << i << endl;
 				if (getBit(oppColorPosBBMinusKing, nX, nY)) {
 					setBitTo(&capBitboard, nX, nY, 1);
-				} else if (!getBit(thisColorPosBB, nX, nY)) {
+				} else if (!getBit(thisColorPosBB, nX, nY) || pseudo) {
 					setBitTo(&moveBitboard, nX, nY, 1);
 				}
 			}
 		}
 	} 
 	else if (pieceType == 'p') {
+		//If you are checking if the king is in check by morphing, you want to invert the pawns dir
+		//Yet not whether it thinks a piece is its enemy or ally
+		/*cout << "Current color: " << currentColor << endl;
+		bool pawnMovingColor = currentColor ^ pawnMorphing;
+		cout << "pawnMovingColor: " << pawnMovingColor << endl;*/
+		
 		//0 indexed btw
 		int startRank;
 		int lastRank;
 		int enPassantRow;
 		//Checking if white
-		if (color) {
+		if (currentColor) {
 			//Inverted because of how stupid matricies are made in programming languages
 			startRank = 6;
 			lastRank = 0;
@@ -184,9 +188,11 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 		//Ignore the grey dotted line under the y, false positive:
 		//https://stackoverflow.com/questions/71013618/understanding-the-sub-expression-overflow-reasoning
 		//y>lastfile is useless, optimize. Can't be on the last file
-		int forwards = (color ? -1 : 1);
-		bool notOverY = ((color && y < 7) || (!color && y > 0));
-		//!pseudo because when you are checking which squares the opp color is attacking a pawn forwards move doesn't count as attacking
+		int forwards = (currentColor ? -1 : 1);
+		bool notOverY = ((currentColor && y < 7) || (!currentColor && y > 0)) || pawnMorphing;
+		//cout << "forwards: " << forwards << endl;
+
+		//!pseudo because when you are checking which squares the opp currentColor is attacking a pawn forwards move doesn't count as attacking
 		if (notOverY && !getBit(oppColorPosBBMinusKing, x, y + forwards) && !getBit(thisColorPosBB, x, y + forwards) && !pseudo) {
 			setBitTo(&moveBitboard, x, y + forwards, 1);
 			//Checking if it can go forwards twice
@@ -218,7 +224,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				enPassantMove.moveOrCapture = 0;
 				enPassantMove.pieceType = pieceToNumber['p'];
 				enPassantMove.piece = pieceIndex;
-				int forwards = (color) ? -1 : 1;
+				int forwards = (currentColor) ? -1 : 1;
 
 				if ((pawnPos % 8) == (x - 1)) {
 					//cout << "Left" << endl;
@@ -270,7 +276,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 		}
 		//Take to the left
 		if (x > 0 && notOverY) {
-			//|| pseudo because when you are checking which squares the opp color is attacking a pawn takes even though there isn't a piece there should be counted
+			//|| pseudo because when you are checking which squares the opp currentColor is attacking a pawn takes even though there isn't a piece there should be counted
 			if (getBit(oppColorPosBBMinusKing, x - 1, y + forwards) || pseudo) {
 				setBitTo(&capBitboard, x - 1, y + forwards, 1);
 			}
@@ -283,7 +289,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 		}
 		//Take to the right
 		if (x < 7 && notOverY) {
-			//|| pseudo because when you are checking which squares the opp color is attacking a pawn takes even though there isn't a piece there should be counted
+			//|| pseudo because when you are checking which squares the opp currentColor is attacking a pawn takes even though there isn't a piece there should be counted
 			if (getBit(oppColorPosBBMinusKing, x + 1, y + forwards) || pseudo) {
 				setBitTo(&capBitboard, x + 1, y + forwards, 1);
 			}
@@ -316,7 +322,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 				if (checkBounds(nX, nY)) {
 					if (getBit(oppColorPosBBMinusKing, nX, nY)) {
 						setBitTo(&capBitboard, nX, nY, 1);
-					} else if (!getBit(thisColorPosBB, nX, nY)) {
+					} else if (!getBit(thisColorPosBB, nX, nY) || pseudo) {
 						setBitTo(&moveBitboard, nX, nY, 1);
 					}
 				}
@@ -324,7 +330,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 		}
 		if (!pseudo) {
 			if (allCurrPositions.colorBitboards[currentColor].canCastleKSide || allCurrPositions.colorBitboards[currentColor].canCastleQSide) {
-				//First rank is dependent on color
+				//First rank is dependent on currentColor
 				int firstRank = currentColor ? 7 : 0;
 				//Checks whether we are in check
 				bool canActuallyCastleKSide = false;
@@ -373,7 +379,7 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 	return generatedBitboards;
 }
 
-array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard thisColorPosBB, int x, int y) {
+array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard thisColorPosBB, int x, int y, bool pseudo) {
 	Bitboard localCapBitboard = 0;
 	Bitboard localMoveBitboard = 0;
 	int i = 1;
@@ -394,7 +400,10 @@ array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard t
 			//Break out of the loop
 			break;
 		} else if (getBit(thisColorPosBB, nX, nY)) {
-			//cout << "Just broke(Same color piece)" << endl;
+			if (pseudo) {
+				setBitTo(&localMoveBitboard, nX, nY, 1);
+			}
+			//cout << "Just broke(Same currentColor piece)" << endl;
 			break;
 		}
 		//No need for an else statment as it breaks if it is true
@@ -441,17 +450,6 @@ array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard ki
 AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash) {
 	calcCombinedPos(allPositionBitboards);
 
-	////Resets en passant after full turn
-	//int pawnWhoDoubleMovedI = allPositionBitboards.pawnWhoDoubleMoved;
-	//if (pawnWhoDoubleMovedI != -1) {
-	//	//White pawn currently means normal pawn
-	//	int pawnWhoDoubleMovedPos = _tzcnt_u64(allPositionBitboards.colorBitboards[currentColor].pieceTypes[whitePawn].posBB[pawnWhoDoubleMovedI]);
-	//	cout << "Removed(XORed): " << EnPassantFileSeed[pawnWhoDoubleMovedPos % 8] << endl;
-	//	currZobristHash ^= EnPassantFileSeed[pawnWhoDoubleMovedPos % 8];
-	//	allPositionBitboards.pawnWhoDoubleMoved = -1;
-	//	amOfEnPassantXORRemovals++;
-	//}
-
 
 	//Optimize this:
 	AllCurrPositions allPositionBitboardsMinusKing = allPositionBitboards;
@@ -459,10 +457,13 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitb
 	//Pass down currentColor, not its inverse as the function inverts it;
 	AttackingAndPinnedBBs attackingAndPinned = firstPseudoMoves(allPositionBitboards, currentColor);
 	Bitboard oppAttacking = attackingAndPinned.attacking;
+	//REMOVE AFTER
+	//cout << convertBBJS(oppAttacking).str() << endl;
 	vector<PinnedPieceData> pinnedPieces = attackingAndPinned.pinnedPieces;
 
 	CheckData checkChecksRes = checkChecks(allPositionBitboards, currentColor);
 	int numOfCheck = checkChecksRes.numOfChecks;
+	//cout << "numOfChecks: " << numOfCheck << endl;
 
 	//The bitboard will have two 1s in the case of 2 checkers, or more(If possible). 
 	// Won't matter as it doesn't check the checkerLocations if it has 2 checkers
@@ -526,6 +527,11 @@ AttackingAndPinnedBBs firstPseudoMoves(AllCurrPositions allCurrPositions, bool c
 			singleBitboards.capBitboard = localCapBitboard;
 			singleBitboards.posBitboard = piece;
 			allBitboards.push_back(singleBitboards);
+			//cout << "PieceType: " << everyPiece.pieceType << endl;
+			//cout << "Pos of piece: " << piecePos << endl;
+			//cout << "Move bitboard: " << endl << convertBBJS(localMoveBitboard).str() << endl;
+			//cout << "Capture bitboard: " << endl << convertBBJS(localCapBitboard).str() << endl;
+			//cout << "-------------------------" << endl;
 		}
 
 	}
@@ -671,6 +677,11 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor) {
 	vector<Bitboard>& checkerLocations = res.checkerLocations;
 	//Can remove this line of code and just modify the allcurrpositions param. Optimize. Not really anymore as I use the param to get the original vector of bbs, can change this though.
 	Bitboard kingPosBB = allCurrPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB[0];
+
+	////REMOVE AFTER
+	//cout << "What is happening?!" << endl;
+	//cout << "King bbs: " << convertVofBBJS(allCurrPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB) << endl;
+
 	int kingPos = _tzcnt_u64(kingPosBB);
 	//Loops over all types of pieces, (not all pieces on the board as the name of the variable might suggest)
 	for (char pieceType : pieces) {
@@ -682,8 +693,12 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor) {
 		kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB = {};
 		kingMorphedPositions.colorBitboards[currColor].pieceTypes[pieceToNumber[pieceType]].posBB.push_back(kingPosBB);
 
-		//CurrColor and not its opposite as we won't to check whether we attack something of the opposite color(So as if we were the same color as the king)
-		MoveCapAndPinnedBBs gennedBitboards = genBitboard(pieceType, kingPos % 8, kingPos / 8, kingMorphedPositions, true, currColor);
+		//CurrColor and not its opposite as we won't to check whether we attack something of the opposite currentColor(So as if we were the same currentColor as the king)
+		MoveCapAndPinnedBBs gennedBitboards = genBitboard(pieceType, kingPos % 8, kingPos / 8, kingMorphedPositions, true, currColor, true);
+		////REMOVE AFTER
+		/*if (pieceType == 'p') {
+			cout << "Pawn attacking bitboard: " << convertBBJS(gennedBitboards.capBitboard).str() << endl;
+		}*/
 		Bitboard gennedCapBitboard = gennedBitboards.capBitboard;
 		Bitboard checkersBB = gennedBitboards.capBitboard & allCurrPositions.colorBitboards[!currColor].pieceTypes[pieceToNumber[pieceType]].pieceTypeCombinedBB;
 		/*if (gennedCapBitboard != 0) {
@@ -705,6 +720,7 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor) {
 	}
 	//numOfChecks and checkerLocations are references thus I can just return res.
 	//cout << "numOfChecks: " << numOfChecks << endl;
+	//cout << "WHAT?!" << endl;
 	return res;
 }
 

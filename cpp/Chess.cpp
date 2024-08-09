@@ -8,7 +8,8 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     int depth = 5;
-    string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+    string lFen = "8/8/8/2k5/2pP4/8/B7/4K3 b - d3";
+    //string lFen = "6k1/8/8/8/2pP4/8/8/1B3K2 b - -";
     if (argc > 1) {
         depth = stoi(argv[1]);
         if (argc > 2) {
@@ -51,8 +52,8 @@ int main(int argc, char* argv[]) {
     //amOfEnPassantXORAdds = 0;
     //amOfEnPassantXORRemovals = 0;
     hypos = 0;
-    transpositionTable = {};
-    int actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash);
+    transpositionTablePerft = {};
+    uint64_t actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash);
     cout << "actualAmountOfLeafNodes: " << actualAmountOfLeafNodes << endl;
     cout << "enPassant: " << enPassant << endl;
     cout << "captures: " << captures << endl;
@@ -404,6 +405,4 @@ stringstream convertBBJS(Bitboard curBB) {
         }
     }
     ss << "]";
-    return ss;
-}
-
+    return

@@ -30,8 +30,8 @@ class OneColorCurrPositions;
 class AllCurrPositions;
 
 //vector<Bitboard> main2();
-MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor, Bitboard oppColorAttackingSquares = 0);
-array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard thisColorPosBB, int x, int y);
+MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCurrPositions, bool pseudo, bool currentColor, bool invertPawns = false, Bitboard oppColorAttackingSquares = 0);
+array<Bitboard, 2> dirToBitboard(MoveMag dir, Bitboard oppColorPosBB, Bitboard thisColorPosBB, int x, int y, bool pseudo = false);
 array<Bitboard, 2> genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard kingPseudoMoveBitboard, Bitboard oppColorPseudoAttackBB);
 AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash);
 AttackingAndPinnedBBs firstPseudoMoves(AllCurrPositions allCurrPositions, bool currColor);

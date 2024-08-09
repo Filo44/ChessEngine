@@ -6,7 +6,7 @@ int totPos = 0;
 //int amOfEnPassantXORAdds = 0;
 //int amOfEnPassantXORRemovals = 0;
 int hypos = 0;
-unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTable = {};
+unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTablePerft = {};
 
 //ostream& operator<<(std::ostream& os, const LeafNodesAndCurrPos& obj) {
 //	//os << "Leaf Nodes: " << obj.leafNodes << std::endl;
@@ -84,18 +84,13 @@ unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTable = {};
 //		return res;
 //	}
 //}
-
-int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash) {
-	//Loose TT, leaf nodes and other stats won't be the same
-	//if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD==transpositionTable[currZobristHash].depth)
-	//Strict TT
-	if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD <= transpositionTable[currZobristHash].depth) {
-		return transpositionTable[currZobristHash].leafNodes;
+EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash) {
+	if (transpositionTablePerft.find(currZobristHash) != transpositionTablePerft.end() && depthCD <= transpositionTablePerft[currZobristHash].depth) {
+		return transpositionTablePerft[currZobristHash].leafNodes;
 	}
 	depthCD--;
-	totPos++;
 	if (depthCD != -1) {
-		int totalOfLeafsCaused = 0;
+		double eval;
 		AllPosMoves posMoves = fullMoveGenLoop(color, allCurrPositions, currZobristHash);
 
 		OneColorCurrPositions colorCurrPositions = allCurrPositions.colorBitboards[color];
@@ -121,7 +116,7 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 						//cout << "HELLO" << endl;
 
 						int posOfNextBit = _tzcnt_u64(currBitboard);
-						
+
 						// i = pieceType, j = piece
 						//If its a pawn, and it is moving and its original x is not the same as the x to where it is moving it is en passant
 						if (i == pieceToNumber['p'] && moveOrCapture == 0 && (_tzcnt_u64(colorCurrPositions.pieceTypes[i].posBB[j]) % 8) != (posOfNextBit % 8)) {
@@ -133,14 +128,10 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 						AllCurrPositions newPositionsAfterMove = allCurrPositions;
 						ZobristHash localZobristHash = newPositionsAfterMove.applyMove(thisMove, currZobristHash);
 						calcCombinedPos(newPositionsAfterMove);
-						//cout << "Depth: " << depthCD << endl;
-						if (depthCD == 0) {
-							//cout << "Depth = 0" << endl;
-							if (moveOrCapture==1) {
-								captures++;
-							}
-						}
-						totalOfLeafsCaused += perft(newPositionsAfterMove, !color, depthCD, localZobristHash);
+
+						//If it's white, you want to take the best refutation, thus the lower val. Opposite for black
+						eval = color ? min(minMax(newPositionsAfterMove, !color, depthCD, localZobristHash).eval, eval) 
+							: max(minMax(newPositionsAfterMove, !color, depthCD, localZobristHash).eval, eval);
 					}
 				}
 			}
@@ -149,7 +140,7 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 		LeafNodesAndCurrPos ttData;
 		ttData.leafNodes = totalOfLeafsCaused;
 		ttData.depth = depthCD;
-		transpositionTable[currZobristHash] = ttData;
+		transpositionTablePerft[currZobristHash] = ttData;
 		return totalOfLeafsCaused;
 	} else {
 		//amountOfLeafNodes++;
@@ -157,34 +148,32 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 	}
 }
 
-ZobristHash applyMovesTo(AllCurrPositions& allCurrPositions, vector<MoveDesc> movesTo, ZobristHash currZobristHash) {
-	//May have to reverse for loop
-	for (int i = movesTo.size() - 1; i >=0; i--) {
-		MoveDesc move = movesTo[i];
-		allCurrPositions.applyMove(move, currZobristHash);
-	}
-	return currZobristHash;
-}
+int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash) {
+	//Strict TT
+	//if (transpositionTablePerft.find(currZobristHash) != transpositionTablePerft.end() && depthCD==transpositionTablePerft[currZobristHash].depth)
+	//Loose TT, leaf nodes and other stats won't be the same
 
-double simpleEval(AllCurrPositions allCurrPositions) {
-	unordered_map<char, double> pieceTypeToVal = {
-		{'r', 5.00},
-		{'n', 3.00},
-		{'b', 3.00},
-		{'q', 9.00},
-		{'p', 1.00}
-	};
-	double total = 0;
-	for (int color = 0; color < 2; color++) {
-		int mult = (color) ? 1 : -1;
-		OneColorCurrPositions colorCurrPositions = allCurrPositions.colorBitboards[color];
-		for (int i = 0; i < 6; i++) {
-			if (pieceToNumber['k'] == i) {
-				continue;
-			}
-			PieceTypeCurrPositions pieceTypeCurrPositions = colorCurrPositions.pieceTypes[i];
-			total += (pieceTypeCurrPositions.posBB.size() * pieceTypeToVal[pieces[i]]) * mult;
-		}
+	////REMOVE AFTER
+	//string stringRepOfBoardBeforeChanges = convertToString(allPositionBitboardsToMatrix(allCurrPositions), 8, 8);
+
+	if (transpositionTablePerft.find(currZobristHash) != transpositionTablePerft.end() && depthCD <= transpositionTablePerft[currZobristHash].depth) {
+		return transpositionTablePerft[currZobristHash].leafNodes;
 	}
-	return total;
-}
+	depthCD--;
+	totPos++;
+	if (depthCD != -1) {
+		uint64_t totalOfLeafsCaused = 0;
+		AllPosMoves posMoves = fullMoveGenLoop(color, allCurrPositions, currZobristHash);
+
+		OneColorCurrPositions colorCurrPositions = allCurrPositions.colorBitboards[color];
+		double bestEval = color ? (-INFINITY) : (INFINITY);
+		for (int i = 0; i < 6; i++) {
+			PieceTypePosMoves& pieceTypePosMoves = posMoves.pieceTypes[i];
+
+			MoveDesc thisMove;
+			thisMove.pieceType = i;
+			thisMove.pieceMovingColor = color;
+
+			for (int j = 0; j < pieceTypePosMoves.posBB.size(); j++) {
+				thisMove.piece = j;
+				for (int moveOrCapture = 0; m

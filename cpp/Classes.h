@@ -11,7 +11,8 @@ extern int totPos;
 //extern int amOfEnPassantXORAdds;
 //extern int amOfEnPassantXORRemovals;
 extern int hypos;
-extern unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTable;
+extern unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTablePerft;
+extern unordered_map<ZobristHash, EvalAndBestMove> transpositionTable;
 
 
 constexpr auto CAPTURE = 1;
@@ -166,6 +167,9 @@ public:
 		return piece;
 	}
 	ZobristHash applyMove(MoveDesc move, ZobristHash currZobristHash) {
+		////REMOVE AFTER
+		//string stringRepOfBoardBeforeChanges = convertToString(allPositionBitboardsToMatrix(*this), 8, 8);
+
 		Bitboard& thisPieceBitboard = colorBitboards[move.pieceMovingColor].pieceTypes[move.pieceType].posBB[move.piece];
 		int pieceLocation = _tzcnt_u64(thisPieceBitboard);
 		//Buffers the application of the pawnWhoDoubleMoved such that we can delete and set the new pawnWhoDoubleMoved at the end while still being able to read it
@@ -325,16 +329,23 @@ public:
 		//Assigns the buffer, if the buffer hasn't been changed since instantiation it is -1 as that is the instantiated value.
 		pawnWhoDoubleMoved = pawnWhoDoubleMovedBuffer;
 
+
+		////REMOVE AFTER
+		//if (colorBitboards[0].pieceTypes[pieceToNumber['k']].posBB.size() == 0) {
+		//	cout << "No more black king :/" << endl;
+		//}else if (colorBitboards[1].pieceTypes[pieceToNumber['k']].posBB.size() == 0) {
+		//	cout << "No more white king :/" << endl;
+		//}
+
 		//Toggle turn
 		currZobristHash ^= SideToMoveIsBlack;
 		return currZobristHash;
 	}
 };
 
-class EvalAndMovesTo {
-public:
+struct EvalAndBestMove {
 	double eval;
-	vector<MoveDesc> movesTo = {};
+	MoveDesc bestMove= {};
 };
 
 class LeafNodesAndCurrPos {
@@ -348,7 +359,3 @@ public:
 };
 
 class PosAndColor {
-public:
-	AllCurrPositions allCurrPositions;
-	bool color;
-};
