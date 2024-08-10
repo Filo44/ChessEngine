@@ -115,14 +115,7 @@ int main(int argc, char* argv[]) {
         calcCombinedPos(allPositionBitboards);
 
         double timeAssigned = timeManagementFunction(2000.00);
-        //EvalAndBestMove resultOfMinMaxSearch = iterativeSearch(allPositionBitboards, color, currZobristHash, timeAssigned);
-        EvalAndBestMove resultOfMinMaxSearch = minMax(allPositionBitboards, color, 1, currZobristHash, (double)time(nullptr) + timeAssigned);
-        
-        cout << "bestMove.pieceMovingColor: " << resultOfMinMaxSearch.bestMove.pieceMovingColor << endl;
-        cout << "bestMove.pieceType: " << resultOfMinMaxSearch.bestMove.pieceType << endl;
-        cout << "bestMove.posOfMove: " << resultOfMinMaxSearch.bestMove.posOfMove << endl;
-        cout << "bestMove.moveOrCapture: " << resultOfMinMaxSearch.bestMove.moveOrCapture << endl;
-        cout << "bestMove.piece: " << resultOfMinMaxSearch.bestMove.piece<< endl;
+        EvalAndBestMove resultOfMinMaxSearch = iterativeSearch(allPositionBitboards, color, currZobristHash, timeAssigned);
 
         currZobristHash = allPositionBitboards.applyMove(resultOfMinMaxSearch.bestMove, currZobristHash);
         calcCombinedPos(allPositionBitboards);
@@ -442,18 +435,14 @@ MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
 }
 
 double timeManagementFunction(double timeRemaining) {
-    return 100.00;
+    return 30.00;
 }
 
 EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable) {
     double cutOffTime = (double)time(nullptr) + timeAvailable;
 
     EvalAndBestMove res;
-    //MoveDesc &bestMove = res.bestMove;
-
-    //double &eval = res.eval;
-    int depth = 1;
-
+    int depth = 2;
     while (time(nullptr)<cutOffTime){
         cout << "Depth: " << depth << endl;
         
@@ -461,25 +450,13 @@ EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, Z
         EvalAndBestMove searchResults = minMax(allCurrPositions, color, depth, currZobristHash, cutOffTime);
 
         //Currently ignores aborted searches
-        cout << "searchResults.abortedDueToTime: " << searchResults.abortedDueToTime << endl;
         if (!searchResults.abortedDueToTime && !searchResults.bestMove.nullMove) {
-            cout << "Adding results" << endl;
             res.eval = searchResults.eval;
             res.bestMove = searchResults.bestMove;
 
-            cout << "newBestMove.pieceMovingColor: " << searchResults.bestMove.pieceMovingColor << endl;
-            cout << "newBestMove.pieceType: " << searchResults.bestMove.pieceType << endl;
-            cout << "newBestMove.posOfMove: " << searchResults.bestMove.posOfMove << endl;
-            cout << "newBestMove.moveOrCapture: " << searchResults.bestMove.moveOrCapture << endl;
-            cout << "newBestMove.piece: " << searchResults.bestMove.piece << endl;
         }
 
         depth++;
     }
-    cout << "bestMove.pieceMovingColor: " << res.bestMove.pieceMovingColor << endl;
-    cout << "bestMove.pieceType: " << res.bestMove.pieceType << endl;
-    cout << "bestMove.posOfMove: " << res.bestMove.posOfMove << endl;
-    cout << "bestMove.moveOrCapture: " << res.bestMove.moveOrCapture << endl;
-    cout << "bestMove.piece: " << res.bestMove.piece << endl;
     return res;
 }

@@ -24,18 +24,13 @@ unordered_map<ZobristHash, EvalAndBestMove> transpositionTable = {};
 
 
 EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, double cutOffTime) {
-	/*if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD <= transpositionTable[currZobristHash].depth) {
+	if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD <= transpositionTable[currZobristHash].depth) {
 		return transpositionTable[currZobristHash];
-	}*/
-	//REMOVE AFTER
-	string stringRepOfPos = convertToString(allPositionBitboardsToMatrix(allCurrPositions), 8, 8);
+	}
 
 	AllPosMoves posMoves = fullMoveGenLoop(color, allCurrPositions, currZobristHash);
-	//cout << "Combined capture bitboard: " << (bitset<64>)posMoves.combinedCapBB << endl;
-	bool captureMovesExist = posMoves.combinedCapBB != 0;
-	bool depthHasNotFinished = depthCD > -1;
-	if (depthHasNotFinished || captureMovesExist) {
-		//cout << "depthCD: " << depthCD << endl;
+
+	if (depthCD > -1) {
 		OneColorCurrPositions colorCurrPositions = allCurrPositions.colorBitboards[color];
 		double bestEval = color ? (-INFINITY) : (INFINITY);
 		MoveDesc bestMove;
@@ -62,8 +57,7 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 				thisMove.piece = j;
 				//If this code is being run when the depth has gone under but there still are captures (!depthHasNotFinished && captureMovesExist)
 				//Only check capture moves
-				bool doingQuiessenceSearch = (!depthHasNotFinished && captureMovesExist);
-				for (int moveOrCapture = doingQuiessenceSearch ? 1:0; moveOrCapture < (doingQuiessenceSearch ? 1:2); moveOrCapture++) {
+				for (int moveOrCapture = 0; moveOrCapture < 2; moveOrCapture++) {
 
 					Bitboard currBitboard = (moveOrCapture == 0) ? pieceTypePosMoves.posBB[j].moveBitboard : pieceTypePosMoves.posBB[j].capBitboard;
 					thisMove.moveOrCapture = (bool)moveOrCapture;
@@ -116,9 +110,7 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 		return posSearchRes;
 	} else{
 		EvalAndBestMove res;
-		res.depth = 0;
 		res.eval = simpleEval(allCurrPositions);
-		res.noMoves = false;
 		return res;
 	}
 }
