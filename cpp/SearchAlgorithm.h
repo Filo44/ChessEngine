@@ -10,11 +10,12 @@ extern int amountOfLeafNodes;
 extern int captures;
 extern int enPassant;
 extern int totPos;
-extern unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTable;
+extern unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTablePerft;
+extern unordered_map<ZobristHash, EvalAndBestMove> transpositionTable;
 
 
 
-//EvalAndMovesTo minMax(AllCurrPositions allCurrPositions, bool color, int depthCD);
+EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, double cutOfTime);
 ZobristHash applyMovesTo(AllCurrPositions& allCurrPositions, vector<MoveDesc> movesTo, ZobristHash currZobristHash);
 int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash);
 double simpleEval(AllCurrPositions allCurrPositions);

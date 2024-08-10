@@ -7,6 +7,8 @@ int totPos = 0;
 //int amOfEnPassantXORRemovals = 0;
 int hypos = 0;
 unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTablePerft = {};
+unordered_map<ZobristHash, EvalAndBestMove> transpositionTable = {};
+
 
 //ostream& operator<<(std::ostream& os, const LeafNodesAndCurrPos& obj) {
 //	//os << "Leaf Nodes: " << obj.leafNodes << std::endl;
@@ -21,80 +23,24 @@ unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTablePerft = {};
 //}
 
 
-//EvalAndMovesTo minMax(AllCurrPositions allCurrPositions, bool color, int depthCD) {
-//	depthCD--;
-//	if (depthCD != -1) {
-//		AllPosMoves posMoves = fullMoveGenLoop(color, allCurrPositions);
-//		calcCombinedMoves(posMoves);
-//
-//		OneColorCurrPositions colorCurrPositions = allCurrPositions.colorBitboards[color];
-//		vector<MoveDesc> bestMoves;
-//		double bestEval = color ? (-INFINITY) : (INFINITY);
-//		for (int i = 0; i < 6; i++) {
-//			PieceTypePosMoves& pieceTypePosMoves = posMoves.pieceTypes[i];
-//
-//			MoveDesc thisMove;
-//			thisMove.pieceType = i;
-//			thisMove.pieceMovingColor = color;
-//
-//			for (int j = 0; j < pieceTypePosMoves.posBB.size(); j++) {
-//
-//				thisMove.piece = j;
-//
-//				for (int moveOrCapture = 0; moveOrCapture < 2; moveOrCapture++) {
-//
-//					//THE FOLLOWING COMMENTS DON'T MATTER ANYMORE, as I now calculate the posmoves inside the function.
-//					//CurrBitboard isn't a reference because we loop over it and remove bits until it equals 0. 
-//					// We don't want these changes to reflect on the posMoves which we pass down in functions.
-//					Bitboard currBitboard = (moveOrCapture==0) ? pieceTypePosMoves.posBB[j].moveBitboard : pieceTypePosMoves.posBB[j].capBitboard;
-//					thisMove.moveOrCapture = (bool)moveOrCapture;
-//
-//					while (currBitboard!=0){
-//						//cout << "HELLO" << endl;
-//
-//						int posOfNextBit = _tzcnt_u64(currBitboard);
-//						thisMove.posOfMove = posOfNextBit;
-//						setBitTo(&currBitboard, posOfNextBit, 0);
-//
-//						AllCurrPositions newPositionsAfterMove = allCurrPositions;
-//						newPositionsAfterMove.applyMove(thisMove);
-//						calcCombinedPos(newPositionsAfterMove);
-//
-//						EvalAndMovesTo res = minMax(newPositionsAfterMove, !color, depthCD);
-//						if (color ? (res.eval > bestEval) : (res.eval < bestEval)) {
-//							bestEval = res.eval;
-//							vector<MoveDesc> resMovesTo = res.movesTo;
-//							resMovesTo.push_back(thisMove);
-//							bestMoves = resMovesTo;
-//						}
-//					}
-//
-//				}
-//			}
-//
-//		}
-//		EvalAndMovesTo res;
-//		res.eval = bestEval;
-//		res.movesTo = bestMoves;
-//		return res;
-//	} else {
-//		EvalAndMovesTo res;
-//		res.eval = simpleEval(allCurrPositions);
-//		amountOfLeafNodes++;
-//		return res;
-//	}
-//}
-EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash) {
-	if (transpositionTablePerft.find(currZobristHash) != transpositionTablePerft.end() && depthCD <= transpositionTablePerft[currZobristHash].depth) {
-		return transpositionTablePerft[currZobristHash].leafNodes;
-	}
-	depthCD--;
-	if (depthCD != -1) {
-		double eval;
-		AllPosMoves posMoves = fullMoveGenLoop(color, allCurrPositions, currZobristHash);
+EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, double cutOffTime) {
+	/*if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD <= transpositionTable[currZobristHash].depth) {
+		return transpositionTable[currZobristHash];
+	}*/
+	//REMOVE AFTER
+	string stringRepOfPos = convertToString(allPositionBitboardsToMatrix(allCurrPositions), 8, 8);
 
+	AllPosMoves posMoves = fullMoveGenLoop(color, allCurrPositions, currZobristHash);
+	//cout << "Combined capture bitboard: " << (bitset<64>)posMoves.combinedCapBB << endl;
+	bool captureMovesExist = posMoves.combinedCapBB != 0;
+	bool depthHasNotFinished = depthCD > -1;
+	if (depthHasNotFinished || captureMovesExist) {
+		//cout << "depthCD: " << depthCD << endl;
 		OneColorCurrPositions colorCurrPositions = allCurrPositions.colorBitboards[color];
 		double bestEval = color ? (-INFINITY) : (INFINITY);
+		MoveDesc bestMove;
+		bestMove.nullMove = true;
+
 		for (int i = 0; i < 6; i++) {
 			PieceTypePosMoves& pieceTypePosMoves = posMoves.pieceTypes[i];
 
@@ -103,17 +49,26 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 			thisMove.pieceMovingColor = color;
 
 			for (int j = 0; j < pieceTypePosMoves.posBB.size(); j++) {
+				if (time(nullptr) > cutOffTime) {
+					EvalAndBestMove abortedRes;
+					abortedRes.eval = bestEval;
+					abortedRes.depth = depthCD;
+					abortedRes.bestMove = bestMove;
+					abortedRes.noMoves = bestMove.nullMove;
+					abortedRes.abortedDueToTime = true;
+					cout << "Aborted due to going over the time available" << endl;
+					return abortedRes;
+				}
 				thisMove.piece = j;
-				for (int moveOrCapture = 0; moveOrCapture < 2; moveOrCapture++) {
+				//If this code is being run when the depth has gone under but there still are captures (!depthHasNotFinished && captureMovesExist)
+				//Only check capture moves
+				bool doingQuiessenceSearch = (!depthHasNotFinished && captureMovesExist);
+				for (int moveOrCapture = doingQuiessenceSearch ? 1:0; moveOrCapture < (doingQuiessenceSearch ? 1:2); moveOrCapture++) {
 
-					//THE FOLLOWING COMMENTS DON'T MATTER ANYMORE, as I now calculate the posmoves inside the function.
-					//CurrBitboard isn't a reference because we loop over it and remove bits until it equals 0. 
-					// We don't want these changes to reflect on the posMoves which we pass down in functions.
 					Bitboard currBitboard = (moveOrCapture == 0) ? pieceTypePosMoves.posBB[j].moveBitboard : pieceTypePosMoves.posBB[j].capBitboard;
 					thisMove.moveOrCapture = (bool)moveOrCapture;
 
 					while (currBitboard != 0) {
-						//cout << "HELLO" << endl;
 
 						int posOfNextBit = _tzcnt_u64(currBitboard);
 
@@ -129,22 +84,42 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 						ZobristHash localZobristHash = newPositionsAfterMove.applyMove(thisMove, currZobristHash);
 						calcCombinedPos(newPositionsAfterMove);
 
-						//If it's white, you want to take the best refutation, thus the lower val. Opposite for black
-						eval = color ? min(minMax(newPositionsAfterMove, !color, depthCD, localZobristHash).eval, eval) 
-							: max(minMax(newPositionsAfterMove, !color, depthCD, localZobristHash).eval, eval);
+						//If it's white, you want to take the best move, thus the higher val. Opposite for black
+						EvalAndBestMove result = minMax(newPositionsAfterMove, !color, depthCD - 1, localZobristHash, cutOffTime);
+						if (result.abortedDueToTime) {
+							EvalAndBestMove abortedRes; 
+							abortedRes.eval = bestEval; 
+							abortedRes.depth = depthCD; 
+							abortedRes.noMoves = bestMove.nullMove;
+							abortedRes.bestMove = bestMove;
+							abortedRes.abortedDueToTime = true;
+							return abortedRes;
+						}
+
+						//Searching for color's moves,
+						if (color ? (result.eval > bestEval) : (result.eval < bestEval)) {
+							bestEval = result.eval;
+							bestMove = thisMove;
+						}
 					}
 				}
 			}
 
 		}
-		LeafNodesAndCurrPos ttData;
-		ttData.leafNodes = totalOfLeafsCaused;
-		ttData.depth = depthCD;
-		transpositionTablePerft[currZobristHash] = ttData;
-		return totalOfLeafsCaused;
-	} else {
-		//amountOfLeafNodes++;
-		return 1;
+
+		EvalAndBestMove posSearchRes;
+		posSearchRes.eval = bestEval; //If there have been no moves(Checkmate) will be negative infinity if white and pos infinity if black
+		posSearchRes.depth = depthCD;
+		posSearchRes.noMoves = bestMove.nullMove;
+		posSearchRes.bestMove = bestMove;
+		transpositionTable[currZobristHash] = posSearchRes;
+		return posSearchRes;
+	} else{
+		EvalAndBestMove res;
+		res.depth = 0;
+		res.eval = simpleEval(allCurrPositions);
+		res.noMoves = false;
+		return res;
 	}
 }
 
@@ -166,7 +141,6 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 		AllPosMoves posMoves = fullMoveGenLoop(color, allCurrPositions, currZobristHash);
 
 		OneColorCurrPositions colorCurrPositions = allCurrPositions.colorBitboards[color];
-		double bestEval = color ? (-INFINITY) : (INFINITY);
 		for (int i = 0; i < 6; i++) {
 			PieceTypePosMoves& pieceTypePosMoves = posMoves.pieceTypes[i];
 
@@ -178,9 +152,6 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 				thisMove.piece = j;
 				for (int moveOrCapture = 0; moveOrCapture < 2; moveOrCapture++) {
 
-					//THE FOLLOWING COMMENTS DON'T MATTER ANYMORE, as I now calculate the posmoves inside the function.
-					//CurrBitboard isn't a reference because we loop over it and remove bits until it equals 0. 
-					// We don't want these changes to reflect on the posMoves which we pass down in functions.
 					Bitboard currBitboard = (moveOrCapture == 0) ? pieceTypePosMoves.posBB[j].moveBitboard : pieceTypePosMoves.posBB[j].capBitboard;
 					thisMove.moveOrCapture = (bool)moveOrCapture;
 

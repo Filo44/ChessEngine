@@ -8,8 +8,9 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     int depth = 5;
-    string lFen = "8/8/8/2k5/2pP4/8/B7/4K3 b - d3";
-    //string lFen = "6k1/8/8/8/2pP4/8/8/1B3K2 b - -";
+    //string lFen = "8/8/8/2k5/2pP4/8/B7/4K3 b - d3";
+    //string lFen = "8/3k3r/8/8/6N1/8/8/2K5 b - -";
+    string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq -";
     if (argc > 1) {
         depth = stoi(argv[1]);
         if (argc > 2) {
@@ -24,15 +25,16 @@ int main(int argc, char* argv[]) {
     AllCurrPositions allPositionBitboards = gameState.allCurrPositions;
     bool color = gameState.color;
 
-    //cout << "allPositionBitboards.colorBitboards[0].canCastleKSide: " << allPositionBitboards.colorBitboards[0].canCastleKSide << endl;
-    //cout << "allPositionBitboards.colorBitboards[1].canCastleKSide: " << allPositionBitboards.colorBitboards[1].canCastleKSide << endl;
-    //cout << "Pawn who double moved: " << allPositionBitboards.pawnWhoDoubleMoved << endl;
-    //cout << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
-
     ZobristHash currZobristHash = genInitZobristHash(allPositionBitboards);
     cout << "Calculated the zobrist hash" << endl;
-    //cout << "-----------------" << endl;
     AllPosMoves posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
+
+    //MoveDesc move;
+    //move.pieceMovingColor = 1;
+    //move.pieceType = 1;
+    //move.posOfMove = 21;
+    //move.moveOrCapture = 0;
+    //move.piece = 0;
 
     
     /*MoveDesc move;
@@ -44,54 +46,40 @@ int main(int argc, char* argv[]) {
     currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
 
     posMoves = fullMoveGenLoop(!color, allPositionBitboards, currZobristHash);*/
+    //amountOfLeafNodes = 0;
+    //captures = 0;
+    //enPassant = 0;
+    //totPos = 0;
+    ////amOfEnPassantXORAdds = 0;
+    ////amOfEnPassantXORRemovals = 0;
+    //hypos = 0;
+    //transpositionTablePerft = {};
+    //uint64_t actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash);
+    //cout << "actualAmountOfLeafNodes: " << actualAmountOfLeafNodes << endl;
+    //cout << "enPassant: " << enPassant << endl;
+    //cout << "captures: " << captures << endl;
+    //cout << "totPos: " << totPos << endl;
+    ////cout << "amOfEnPassantXORAdds : " << amOfEnPassantXORAdds << endl;
+    ////cout << "amOfEnPassantXORRemovals: " << amOfEnPassantXORRemovals<< endl;
+    ////cout << "standingEnPassantXORs: " << amOfEnPassantXORAdds - amOfEnPassantXORRemovals<< endl;
+    //cout << "hypos: " << hypos << endl;
+    //return actualAmountOfLeafNodes;
+    
+    transpositionTable = {};
+    /*EvalAndBestMove res = minMax(allPositionBitboards, color, depth, currZobristHash);
+    cout << "Eval " << res.eval << endl;
+    cout << "Hi" << endl;*/
 
-    amountOfLeafNodes = 0;
-    captures = 0;
-    enPassant = 0;
-    totPos = 0;
-    //amOfEnPassantXORAdds = 0;
-    //amOfEnPassantXORRemovals = 0;
-    hypos = 0;
-    transpositionTablePerft = {};
-    uint64_t actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash);
-    cout << "actualAmountOfLeafNodes: " << actualAmountOfLeafNodes << endl;
-    cout << "enPassant: " << enPassant << endl;
-    cout << "captures: " << captures << endl;
-    cout << "totPos: " << totPos << endl;
-    //cout << "amOfEnPassantXORAdds : " << amOfEnPassantXORAdds << endl;
-    //cout << "amOfEnPassantXORRemovals: " << amOfEnPassantXORRemovals<< endl;
-    //cout << "standingEnPassantXORs: " << amOfEnPassantXORAdds - amOfEnPassantXORRemovals<< endl;
-    cout << "hypos: " << hypos << endl;
-    return actualAmountOfLeafNodes;
 
-    /*cout << "Evaluation: " << searchRes.eval << endl;
+    //Fixes CORS errors
+    svr.Options("/MoveResponse", [](const httplib::Request& /*req*/, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        res.set_header("Access-Control-Max-Age", "3600"); // Optional: Cache preflight response for 1 hour
+        res.set_content("", "text/plain");
+    });
 
-    cout << "posOfMove: " << searchRes.movesTo[searchRes.movesTo.size()-1].posOfMove << endl;
-    cout << "pieceType: " << pieces[searchRes.movesTo[searchRes.movesTo.size() - 1].pieceType] << endl;
-
-    allPositionBitboards.applyMove(searchRes.movesTo[searchRes.movesTo.size() - 1]);*/
-
-    //MoveDesc move;
-    //move.pieceMovingColor = 1;
-    //move.moveOrCapture = 0;
-    //move.piece = 0;
-    //move.pieceType = pieceToNumber['p'];
-    //move.posOfMove = 35;
-    //allPositionBitboards.applyMove(move);
-
-    //posMoves = fullMoveGenLoop(0, allPositionBitboards);
-
-    //cout << "---------------" << endl;
-    //MoveDesc move1;
-    //move1.pieceMovingColor = 0;
-    //move1.moveOrCapture = 0;
-    //move1.piece = 0;
-    //move1.pieceType = pieceToNumber['p'];
-    //move1.posOfMove = _tzcnt_u64(posMoves.pieceTypes[move.pieceType].posBB[move.piece].moveBitboard);
-    //allPositionBitboards.applyMove(move1);
-    //cout << "---------------" << endl;
-
-    //posMoves = fullMoveGenLoop(1, allPositionBitboards);
 
     // Handle GET requests
     svr.Get("/data", [&allPositionBitboards, &posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
@@ -107,12 +95,41 @@ int main(int argc, char* argv[]) {
     //});
     //Dummy function
     svr.Get("/eval", [](const httplib::Request& /*req*/, httplib::Response& res) {
-        res.set_content("1", "text/plain");
+        res.set_content("0", "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
      });
 
     svr.Get("/getBitboards", [posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
         res.set_content(allPosMovesToMatrix(posMoves), "text/plain");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+    svr.Post("/MoveResponse", [&allPositionBitboards, &color, depth, &currZobristHash](const httplib::Request& req, httplib::Response& res) {
+        // Parse the JSON data from the request body
+        json json_data = json::parse(req.body);
+
+        // Assuming you have a function to convert moveStr to MoveDesc
+        MoveDesc move = parseMove(json_data, allPositionBitboards);
+
+        // Apply the move and get the result
+        currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
+        calcCombinedPos(allPositionBitboards);
+
+        double timeAssigned = timeManagementFunction(2000.00);
+        //EvalAndBestMove resultOfMinMaxSearch = iterativeSearch(allPositionBitboards, color, currZobristHash, timeAssigned);
+        EvalAndBestMove resultOfMinMaxSearch = minMax(allPositionBitboards, color, 1, currZobristHash, (double)time(nullptr) + timeAssigned);
+        
+        cout << "bestMove.pieceMovingColor: " << resultOfMinMaxSearch.bestMove.pieceMovingColor << endl;
+        cout << "bestMove.pieceType: " << resultOfMinMaxSearch.bestMove.pieceType << endl;
+        cout << "bestMove.posOfMove: " << resultOfMinMaxSearch.bestMove.posOfMove << endl;
+        cout << "bestMove.moveOrCapture: " << resultOfMinMaxSearch.bestMove.moveOrCapture << endl;
+        cout << "bestMove.piece: " << resultOfMinMaxSearch.bestMove.piece<< endl;
+
+        currZobristHash = allPositionBitboards.applyMove(resultOfMinMaxSearch.bestMove, currZobristHash);
+        calcCombinedPos(allPositionBitboards);
+
+
+        // Convert the result to JSON and send it back
+        res.set_content(convertToJSArr(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 
@@ -408,3 +425,61 @@ stringstream convertBBJS(Bitboard curBB) {
     return ss;
 }
 
+MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
+    // Your logic to convert moveStr to a MoveDesc object
+    MoveDesc move;
+    move.pieceMovingColor = (bool)moveStr["pieceMovingColor"];
+    move.pieceType = moveStr["pieceType"];
+    move.posOfMove = moveStr["posOfMove"];
+    move.moveOrCapture = moveStr["moveOrCapture"];
+    move.piece = allCurrPositions.searchPieceByPosAndType((int)moveStr["xFrom"] + ((int)moveStr["yFrom"] * 8), moveStr["pieceType"], moveStr["pieceMovingColor"]);
+    cout << "move.pieceMovingColor: " << move.pieceMovingColor << endl;
+    cout << "move.pieceType: " << move.pieceType << endl;
+    cout << "move.posOfMove: " << move.posOfMove << endl;
+    cout << "move.moveOrCapture: " << move.moveOrCapture << endl;
+    cout << "move.piece: " << move.piece << endl;
+    return move;
+}
+
+double timeManagementFunction(double timeRemaining) {
+    return 100.00;
+}
+
+EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable) {
+    double cutOffTime = (double)time(nullptr) + timeAvailable;
+
+    EvalAndBestMove res;
+    //MoveDesc &bestMove = res.bestMove;
+
+    //double &eval = res.eval;
+    int depth = 1;
+
+    while (time(nullptr)<cutOffTime){
+        cout << "Depth: " << depth << endl;
+        
+        transpositionTable = {};
+        EvalAndBestMove searchResults = minMax(allCurrPositions, color, depth, currZobristHash, cutOffTime);
+
+        //Currently ignores aborted searches
+        cout << "searchResults.abortedDueToTime: " << searchResults.abortedDueToTime << endl;
+        if (!searchResults.abortedDueToTime && !searchResults.bestMove.nullMove) {
+            cout << "Adding results" << endl;
+            res.eval = searchResults.eval;
+            res.bestMove = searchResults.bestMove;
+
+            cout << "newBestMove.pieceMovingColor: " << searchResults.bestMove.pieceMovingColor << endl;
+            cout << "newBestMove.pieceType: " << searchResults.bestMove.pieceType << endl;
+            cout << "newBestMove.posOfMove: " << searchResults.bestMove.posOfMove << endl;
+            cout << "newBestMove.moveOrCapture: " << searchResults.bestMove.moveOrCapture << endl;
+            cout << "newBestMove.piece: " << searchResults.bestMove.piece << endl;
+        }
+
+        depth++;
+    }
+    cout << "bestMove.pieceMovingColor: " << res.bestMove.pieceMovingColor << endl;
+    cout << "bestMove.pieceType: " << res.bestMove.pieceType << endl;
+    cout << "bestMove.posOfMove: " << res.bestMove.posOfMove << endl;
+    cout << "bestMove.moveOrCapture: " << res.bestMove.moveOrCapture << endl;
+    cout << "bestMove.piece: " << res.bestMove.piece << endl;
+    return res;
+}

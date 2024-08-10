@@ -2,10 +2,14 @@
 
 #include <iostream>
 #include "httplib.h"
+#include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
 #include <cstdint>
 #include <unordered_map>
+#include <ctime>
+
+using namespace nlohmann;
 
 enum piece {
 	whiteRook = 0,
@@ -40,6 +44,7 @@ class MoveCapAndPinnedBBs;
 class CheckData;
 class LeafNodesAndCurrPos;
 class PosAndColor;
+class EvalAndBestMove;
 
 // char** fenToMatrix(std::string fen);
 void delete2DArray(char **arr, int rows);
@@ -49,9 +54,12 @@ string convertVofBBJS(vector<Bitboard> matrixVector);
 stringstream convertBBJS(Bitboard curBB);
 string allPosMovesToMatrix(AllPosMoves posMoves);
 ZobristHash genInitZobristHash(AllCurrPositions currPositions);
+EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable);
 
 PosAndColor fenToPosBitboards(std::string fen);
 char **allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
+MoveDesc parseMove(json moveStr, AllCurrPositions allCurrPositions);
+double timeManagementFunction(double timeRemaining);
 
 inline void setBitTo(Bitboard *initBB, int posX, int posY, bool value)
 {

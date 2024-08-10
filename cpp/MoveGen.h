@@ -24,6 +24,7 @@ class MoveCapAndPinnedBBs;
 class CheckData;
 class LeafNodesAndCurrPos;
 class PosAndColor;
+class EvalAndBestMove;
 
 class PieceTypeCurrPositions;
 class OneColorCurrPositions;

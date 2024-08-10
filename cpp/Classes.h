@@ -39,6 +39,7 @@ public:
 	int piece;
 	int posOfMove;
 	bool moveOrCapture;
+	bool nullMove = false;
 };
 
 class SinglePiecePosMoves {
@@ -168,7 +169,7 @@ public:
 	}
 	ZobristHash applyMove(MoveDesc move, ZobristHash currZobristHash) {
 		////REMOVE AFTER
-		//string stringRepOfBoardBeforeChanges = convertToString(allPositionBitboardsToMatrix(*this), 8, 8);
+		string stringRepOfBoardBeforeChanges = convertToString(allPositionBitboardsToMatrix(*this), 8, 8);
 
 		Bitboard& thisPieceBitboard = colorBitboards[move.pieceMovingColor].pieceTypes[move.pieceType].posBB[move.piece];
 		int pieceLocation = _tzcnt_u64(thisPieceBitboard);
@@ -345,7 +346,10 @@ public:
 
 struct EvalAndBestMove {
 	double eval;
-	MoveDesc bestMove= {};
+	MoveDesc bestMove;
+	int depth;
+	bool abortedDueToTime = false;
+	bool noMoves = false;
 };
 
 class LeafNodesAndCurrPos {

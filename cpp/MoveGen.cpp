@@ -24,7 +24,6 @@ MoveCapAndPinnedBBs genBitboard(char piece, int x, int y, AllCurrPositions allCu
 	Bitboard oppColorPosBBMinusKing = allCurrPositions.colorBitboards[!currentColor].colorCombinedBB;
 	if (pseudo) {
 		//Remove king from oppColorPosBBMinusKing
-		//cout << convertVofBBJS(allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['k']].posBB) << endl;
 		if (allCurrPositions.colorBitboards[!currentColor].pieceTypes[pieceToNumber['k']].posBB.size() == 0) {
 			cout << "HUH?? No opp colored king, fix later" << endl;
 			//cout << "All pos: " << endl << convertToString(allPositionBitboardsToMatrix(allCurrPositions), 8, 8) << endl;
@@ -490,7 +489,7 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitb
 	kingMoves.capBitboard = legalKingMoves[1];
 	kingMoves.posBitboard = kingPosBB;
 	posMoves.pieceTypes[pieceToNumber['k']].posBB = { kingMoves };
-
+	calcCombinedMoves(posMoves);
 	return posMoves;
 }
 
