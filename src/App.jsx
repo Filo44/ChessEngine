@@ -130,7 +130,8 @@ function App() {
                 posOfMove:posOfMove,
                 moveOrCapture: moveOrCapture,
                 xFrom:xFrom,
-                yFrom:yFrom
+                yFrom:yFrom,
+                timeLeft: 2000.00
             };
             applyMove(xFrom, yFrom, xTo, yTo, pieceTypeChar);
             try {
@@ -149,7 +150,7 @@ function App() {
                 const data = await response.text();
                 console.log(data);
                 console.log("Response from C++ server:", JSON.parse(data));
-                setResponse(JSON.parse(data));
+                setResponse(JSON.parse(data).newPos);
             } catch (error) {
                 console.log("Error fetching data:", error);
             }

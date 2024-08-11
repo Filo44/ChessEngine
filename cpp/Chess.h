@@ -55,6 +55,7 @@ stringstream convertBBJS(Bitboard curBB);
 string allPosMovesToMatrix(AllPosMoves posMoves);
 ZobristHash genInitZobristHash(AllCurrPositions currPositions);
 EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable);
+string convertMoveToJS(MoveDesc move);
 
 PosAndColor fenToPosBitboards(std::string fen);
 char **allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
