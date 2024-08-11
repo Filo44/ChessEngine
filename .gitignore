@@ -22,9 +22,9 @@ Utils
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
+# *.sln
 *.sw?
-*.vcxproj*
+# *.vcxproj*
 *.aps
 
 #Output files
