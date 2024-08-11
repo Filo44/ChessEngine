@@ -87,6 +87,13 @@ int main(int argc, char* argv[]) {
         res.set_header("Access-Control-Max-Age", "3600"); // Optional: Cache preflight response for 1 hour
         res.set_content("", "text/plain");
     });
+    svr.Options("/GetFirstMove", [](const httplib::Request& /*req*/, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        res.set_header("Access-Control-Max-Age", "3600"); // Optional: Cache preflight response for 1 hour
+        res.set_content("", "text/plain");
+    });
 
 
     // Handle GET requests
@@ -112,21 +119,26 @@ int main(int argc, char* argv[]) {
         res.set_header("Access-Control-Allow-Origin", "*");
     });
     svr.Post("/GetFirstMove", [&allPositionBitboards, &color, &currZobristHash](const httplib::Request& req, httplib::Response& res) {
+        cout << "Requested first move" << endl;
         json json_data = json::parse(req.body);
         double timeLeft = json_data["timeLeft"];
 
         double timeAssigned = timeManagementFunction(timeLeft);
         EvalAndBestMove resultOfMinMaxSearch = iterativeSearch(allPositionBitboards, color, currZobristHash, timeAssigned);
+        cout << "Best move: " << convertMoveToJS(resultOfMinMaxSearch.bestMove) << endl;
 
         currZobristHash = allPositionBitboards.applyMove(resultOfMinMaxSearch.bestMove, currZobristHash);
         calcCombinedPos(allPositionBitboards);
 
-        res.set_content("{newPos" + convertToJSArr(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) + ", move:" + convertMoveToJS(resultOfMinMaxSearch.bestMove)
+        string responseContent = "{newPos" + convertToJSArr(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) + ", move:" + convertMoveToJS(resultOfMinMaxSearch.bestMove)
             + ", canWhiteCastleKSide:" + (allPositionBitboards.colorBitboards[1].canCastleKSide ? "true" : "false")
             + ", canWhiteCastleQSide:" + (allPositionBitboards.colorBitboards[1].canCastleQSide ? "true" : "false")
             + ", canBlackCastleKSide:" + (allPositionBitboards.colorBitboards[0].canCastleKSide ? "true" : "false")
             + ", canBlackCastleQSide:" + (allPositionBitboards.colorBitboards[0].canCastleQSide ? "true" : "false")
-            + "}", "text/plain");
+            + "}";
+        cout << "Responding: " << responseContent << endl;
+
+        res.set_content(responseContent, "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
     svr.Post("/MoveResponse", [&allPositionBitboards, &color, &currZobristHash](const httplib::Request& req, httplib::Response& res) {
@@ -136,7 +148,7 @@ int main(int argc, char* argv[]) {
         double timeLeft = json_data["timeLeft"];
 
         // Assuming you have a function to convert moveStr to MoveDesc
-        MoveDesc move = parseMove(json_data, allPositionBitboards);
+        MoveDesc move = parseMove(json_data["prevMove"], allPositionBitboards);
 
         // Apply the move and get the result
         currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
