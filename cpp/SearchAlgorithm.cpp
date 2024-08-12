@@ -213,7 +213,7 @@ ZobristHash applyMovesTo(AllCurrPositions& allCurrPositions, vector<MoveDesc> mo
 	return currZobristHash;
 }
 
-double simpleEval(AllCurrPositions allCurrPositions) {
+double simpleEval(AllCurrPositions allCurrPositions, bool colorToMove, ZobristHash currZobristHash) {
 	unordered_map<char, double> pieceTypeToVal = {
 		{'r', 5.00},
 		{'n', 3.00},
@@ -231,6 +231,16 @@ double simpleEval(AllCurrPositions allCurrPositions) {
 			}
 			PieceTypeCurrPositions pieceTypeCurrPositions = colorCurrPositions.pieceTypes[i];
 			total += (pieceTypeCurrPositions.posBB.size() * pieceTypeToVal[pieces[i]]) * mult;
+		}
+	}
+	AllPosMoves posMoves = fullMoveGenLoop(colorToMove, allCurrPositions, currZobristHash);
+	if (posMoves.combinedCapBB == 0 && posMoves.combinedMoveBB == 0) {
+		if (checkChecks(allCurrPositions, colorToMove).numOfChecks != 0) {
+			//If it is white to move and it has no moves, and it is in check(Thus checkmate) returns -INFINITY, opp for black
+			return colorToMove ? -INFINITY : INFINITY;
+		} else {
+			//If it is anyone to move and it has no moves but it isn't in check(Thus stalemate) returns 0;
+			return 0;
 		}
 	}
 	return total;
