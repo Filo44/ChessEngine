@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
         currZobristHash = allPositionBitboards.applyMove(resultOfMinMaxSearch.bestMove, currZobristHash);
         calcCombinedPos(allPositionBitboards);
 
-        string responseContent = "{newPos" + convertToJSArr(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) + ", move:" + convertMoveToJS(resultOfMinMaxSearch.bestMove)
+        string responseContent = "{newPos: " + convertToJSArr(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) + ", move:" + convertMoveToJS(resultOfMinMaxSearch.bestMove)
             + ", canWhiteCastleKSide:" + (allPositionBitboards.colorBitboards[1].canCastleKSide ? "true" : "false")
             + ", canWhiteCastleQSide:" + (allPositionBitboards.colorBitboards[1].canCastleQSide ? "true" : "false")
             + ", canBlackCastleKSide:" + (allPositionBitboards.colorBitboards[0].canCastleKSide ? "true" : "false")
@@ -511,15 +511,15 @@ EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, Z
 
 string convertMoveToJS(MoveDesc move) {
     string res = "{pieceMovingColor:";
-    res += move.pieceMovingColor;
+    res += move.pieceMovingColor ? "true" : "false";
     res += ", pieceType:";
-    res += move.pieceType;
+    res += to_string(move.pieceType);
     res += ", posOfMove:";
-    res += move.posOfMove;
+    res += to_string(move.posOfMove);
     res += ", moveOrCapture:";
-    res += move.moveOrCapture;
+    res += to_string(move.moveOrCapture);
     res += ", piece:";
-    res += move.piece;
+    res += to_string(move.piece);
     res += "}";
     return res;
 }
