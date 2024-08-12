@@ -56,6 +56,8 @@ string allPosMovesToMatrix(AllPosMoves posMoves);
 ZobristHash genInitZobristHash(AllCurrPositions currPositions);
 EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable);
 string convertMoveToJS(MoveDesc move);
+EvalAndBestMove getMoveAndApplyFromPos(AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash, double timeLeft, bool color);
+string posAndGameStateToJS(AllCurrPositions allPositionBitboards, EvalAndBestMove resultOfMinMaxSearch); 
 
 PosAndColor fenToPosBitboards(std::string fen);
 char **allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);

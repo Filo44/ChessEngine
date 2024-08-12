@@ -123,51 +123,34 @@ int main(int argc, char* argv[]) {
         json json_data = json::parse(req.body);
         double timeLeft = json_data["timeLeft"];
 
-        double timeAssigned = timeManagementFunction(timeLeft);
-        EvalAndBestMove resultOfMinMaxSearch = iterativeSearch(allPositionBitboards, color, currZobristHash, timeAssigned);
-        cout << "Best move: " << convertMoveToJS(resultOfMinMaxSearch.bestMove) << endl;
-
-        currZobristHash = allPositionBitboards.applyMove(resultOfMinMaxSearch.bestMove, currZobristHash);
-        calcCombinedPos(allPositionBitboards);
-
-        string responseContent = "{newPos: " + convertToJSArr(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) + ", move:" + convertMoveToJS(resultOfMinMaxSearch.bestMove)
-            + ", canWhiteCastleKSide:" + (allPositionBitboards.colorBitboards[1].canCastleKSide ? "true" : "false")
-            + ", canWhiteCastleQSide:" + (allPositionBitboards.colorBitboards[1].canCastleQSide ? "true" : "false")
-            + ", canBlackCastleKSide:" + (allPositionBitboards.colorBitboards[0].canCastleKSide ? "true" : "false")
-            + ", canBlackCastleQSide:" + (allPositionBitboards.colorBitboards[0].canCastleQSide ? "true" : "false")
-            + "}";
-        cout << "Responding: " << responseContent << endl;
-
-        res.set_content(responseContent, "text/plain");
+        EvalAndBestMove resultOfMinMaxSearch = getMoveAndApplyFromPos(allPositionBitboards, currZobristHash, timeLeft, color);
+        
+        res.set_content(posAndGameStateToJS(allPositionBitboards, resultOfMinMaxSearch), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
     svr.Post("/MoveResponse", [&allPositionBitboards, &color, &currZobristHash](const httplib::Request& req, httplib::Response& res) {
+        cout << "Requesting move response" << endl;
         // Parse the JSON data from the request body
+        cout << "Raw req.body: " << req.body << endl;
         json json_data = json::parse(req.body);
-
+        cout << "JSON data" << json_data << endl;
         double timeLeft = json_data["timeLeft"];
+        cout << "timeLeft: " << timeLeft << endl;
 
-        // Assuming you have a function to convert moveStr to MoveDesc
+        cout << "Starting to parse" << endl;
         MoveDesc move = parseMove(json_data["prevMove"], allPositionBitboards);
+        cout << "Finished parsing" << endl;
 
         // Apply the move and get the result
         currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
         calcCombinedPos(allPositionBitboards);
 
-        double timeAssigned = timeManagementFunction(timeLeft);
-        EvalAndBestMove resultOfMinMaxSearch = iterativeSearch(allPositionBitboards, color, currZobristHash, timeAssigned);
-
-        currZobristHash = allPositionBitboards.applyMove(resultOfMinMaxSearch.bestMove, currZobristHash);
-        calcCombinedPos(allPositionBitboards);
-
+        cout << "Starting minMaxSearch" << endl;
+        EvalAndBestMove resultOfMinMaxSearch = getMoveAndApplyFromPos(allPositionBitboards, currZobristHash, timeLeft, color);
+        cout << "Finished minMaxSearch" << endl;
 
         // Convert the result to JSON and send it back
-        res.set_content("{newPos"+convertToJSArr(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8)+", move:"+convertMoveToJS(resultOfMinMaxSearch.bestMove)
-            + ", canWhiteCastleKSide:" + (allPositionBitboards.colorBitboards[1].canCastleKSide ? "true" : "false") 
-            + ", canWhiteCastleQSide:" + (allPositionBitboards.colorBitboards[1].canCastleQSide ? "true" : "false") 
-            + ", canBlackCastleKSide:" + (allPositionBitboards.colorBitboards[0].canCastleKSide ? "true" : "false") 
-            + ", canBlackCastleQSide:" + (allPositionBitboards.colorBitboards[0].canCastleQSide ? "true" : "false")
-            + "}", "text/plain");
+        res.set_content(posAndGameStateToJS(allPositionBitboards, resultOfMinMaxSearch), "text/plain");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
     svr.Post("/exit", [](const httplib::Request& /*req*/, httplib::Response& res) {
@@ -470,20 +453,40 @@ MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
     // Your logic to convert moveStr to a MoveDesc object
     MoveDesc move;
     move.pieceMovingColor = (bool)moveStr["pieceMovingColor"];
-    move.pieceType = moveStr["pieceType"];
-    move.posOfMove = moveStr["posOfMove"];
-    move.moveOrCapture = moveStr["moveOrCapture"];
-    move.piece = allCurrPositions.searchPieceByPosAndType((int)moveStr["xFrom"] + ((int)moveStr["yFrom"] * 8), moveStr["pieceType"], moveStr["pieceMovingColor"]);
     cout << "move.pieceMovingColor: " << move.pieceMovingColor << endl;
+    move.pieceType = moveStr["pieceType"];
     cout << "move.pieceType: " << move.pieceType << endl;
+    move.posOfMove = moveStr["posOfMove"];
     cout << "move.posOfMove: " << move.posOfMove << endl;
+    cout << "moveStr[\"moveOrCapture\"]:" << moveStr["moveOrCapture"] << endl;
+    cout << "(int)moveStr[\"moveOrCapture\"]:" << (int)moveStr["moveOrCapture"] << endl;
+    move.moveOrCapture = (int)moveStr["moveOrCapture"];
     cout << "move.moveOrCapture: " << move.moveOrCapture << endl;
+    if (moveStr.contains("xFrom")) {
+        move.piece = allCurrPositions.searchPieceByPosAndType((int)moveStr["xFrom"] + ((int)moveStr["yFrom"] * 8), moveStr["pieceType"], moveStr["pieceMovingColor"]);
+    } else {
+        move.piece = moveStr["piece"];
+    }
     cout << "move.piece: " << move.piece << endl;
     return move;
 }
+string convertMoveToJS(MoveDesc move) {
+    string res = "{\"pieceMovingColor\":";
+    res += move.pieceMovingColor ? "true" : "false";
+    res += ", \"pieceType\":";
+    res += to_string(move.pieceType);
+    res += ", \"posOfMove\":";
+    res += to_string(move.posOfMove);
+    res += ", \"moveOrCapture\":";
+    res += to_string(move.moveOrCapture);
+    res += ", \"piece\":";
+    res += to_string(move.piece);
+    res += "}";
+    return res;
+}
 
 double timeManagementFunction(double timeRemaining) {
-    return 30.00;
+    return 10.00;
 }
 
 EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable) {
@@ -509,17 +512,24 @@ EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, Z
     return res;
 }
 
-string convertMoveToJS(MoveDesc move) {
-    string res = "{pieceMovingColor:";
-    res += move.pieceMovingColor ? "true" : "false";
-    res += ", pieceType:";
-    res += to_string(move.pieceType);
-    res += ", posOfMove:";
-    res += to_string(move.posOfMove);
-    res += ", moveOrCapture:";
-    res += to_string(move.moveOrCapture);
-    res += ", piece:";
-    res += to_string(move.piece);
-    res += "}";
+
+EvalAndBestMove getMoveAndApplyFromPos(AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash, double timeLeft, bool color) {
+    double timeAssigned = timeManagementFunction(timeLeft);
+    EvalAndBestMove resultOfMinMaxSearch = iterativeSearch(allPositionBitboards, color, currZobristHash, timeAssigned);
+    cout << "Best move: " << convertMoveToJS(resultOfMinMaxSearch.bestMove) << endl;
+
+    currZobristHash = allPositionBitboards.applyMove(resultOfMinMaxSearch.bestMove, currZobristHash);
+    calcCombinedPos(allPositionBitboards);
+    return resultOfMinMaxSearch;
+}
+
+string posAndGameStateToJS(AllCurrPositions allPositionBitboards, EvalAndBestMove resultOfMinMaxSearch) {
+    string res = "{\"newPos\": " + convertToJSArr(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) + ", \"move\":" + convertMoveToJS(resultOfMinMaxSearch.bestMove)
+        + ", \"canWhiteCastleKSide\":" + (allPositionBitboards.colorBitboards[1].canCastleKSide ? "true" : "false")
+        + ", \"canWhiteCastleQSide\":" + (allPositionBitboards.colorBitboards[1].canCastleQSide ? "true" : "false")
+        + ", \"canBlackCastleKSide\":" + (allPositionBitboards.colorBitboards[0].canCastleKSide ? "true" : "false")
+        + ", \"canBlackCastleQSide\":" + (allPositionBitboards.colorBitboards[0].canCastleQSide ? "true" : "false")
+        + "}";
+    cout << "Responding: " << res;
     return res;
 }
