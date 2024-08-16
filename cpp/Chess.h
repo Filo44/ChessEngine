@@ -45,6 +45,7 @@ class CheckData;
 class LeafNodesAndCurrPos;
 class PosAndColor;
 class EvalAndBestMove;
+class BitboardAndPieceInfo;
 
 // char** fenToMatrix(std::string fen);
 void delete2DArray(char **arr, int rows);

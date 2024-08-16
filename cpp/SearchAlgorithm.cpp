@@ -110,7 +110,7 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 		return posSearchRes;
 	} else{
 		EvalAndBestMove res;
-		res.eval = simpleEval(allCurrPositions);
+		res.eval = simpleEval(allCurrPositions, color, currZobristHash);
 		return res;
 	}
 }
@@ -189,14 +189,6 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 		ttData.leafNodes = totalOfLeafsCaused;
 		ttData.depth = depthCD;
 		transpositionTablePerft[currZobristHash] = ttData;
-
-		//REMOVE AFTER
-		cout << "totalOfLeafsCaused: " << totalOfLeafsCaused << endl;
-		//REMOVE AFTER
-		if (totalOfLeafsCaused < 0) {
-			cout << "Total leafs are negative, what is happening?" << endl;
-			cout << "I hate breakpoints. " << endl;
-		}
 		return totalOfLeafsCaused;
 	} else {
 		//amountOfLeafNodes++;

@@ -462,11 +462,12 @@ AllPosMoves fullMoveGenLoop(bool currentColor, AllCurrPositions& allPositionBitb
 
 	CheckData checkChecksRes = checkChecks(allPositionBitboards, currentColor);
 	int numOfCheck = checkChecksRes.numOfChecks;
-	//cout << "numOfChecks: " << numOfCheck << endl;
+	//cout << "Num of checks: " << numOfCheck << endl;
+	//cout << "First checker: " << _tzcnt_u64(checkChecksRes.checkerLocations[0].checkerBitboard) << endl;
 
 	//The bitboard will have two 1s in the case of 2 checkers, or more(If possible). 
 	// Won't matter as it doesn't check the checkerLocations if it has 2 checkers
-	vector<Bitboard> checkerLocations = checkChecksRes.checkerLocations;
+	vector<BitboardAndPieceInfo> checkerLocations = checkChecksRes.checkerLocations;
 	//Set the pieceToNum to something static/use #define
 	//Only one king thus why I accessed the [0] (0th)/(first) element of the vector
 	Bitboard kingPosBB = allPositionBitboards.colorBitboards[currentColor].pieceTypes[pieceToNumber['k']].posBB[0];
@@ -552,32 +553,41 @@ AllPosMoves secondPseudoMoves(int numOfCheck, vector<PinnedPieceData> pinnedPiec
 	OneColorCurrPositions everyPieceColor = allCurrPositions.colorBitboards[currColor];
 	AllPosMoves allMovesBitboard;
 
-	vector<Bitboard> checkerLocations = checkData.checkerLocations;
+	vector<BitboardAndPieceInfo> checkerLocations = checkData.checkerLocations;
 	Bitboard checkerToKingBBMove = ~((Bitboard)0);
 	Bitboard checkerToKingBBCapture = ~((Bitboard)0);
 
 
 	if (numOfCheck == 1) {
-		//Generate the checker to king bitboard
+		if (checkerLocations[0].pieceType == 'q' || checkerLocations[0].pieceType == 'b' || checkerLocations[0].pieceType == 'r') {
+			//Generate the checker to king bitboard
 
-		//It uses the first checker as if there are more than one, it wont use these variables
-		int firstCheckerPos = _tzcnt_u64(checkerLocations[0]);
-		//Distances must be ints so I can do the max,min limiting.
-		int firstCheckerX = firstCheckerPos % 8;
-		int firstCheckerY = firstCheckerPos / 8;
-		//cout << "First checker x: " << firstCheckerX << ", y:" << firstCheckerY << endl;
-		int xDist = firstCheckerX - (kingPos % 8);
-		int xInc = min(max(xDist, -1), 1);
-		//cout << "Xinc: " << xInc << endl;
+			//It uses the first checker as if there are more than one, it wont use these variables
+			int &firstCheckerPos = checkerLocations[0].pos;
+		
+			//Distances must be ints so I can do the max,min limiting.
+			int firstCheckerX = firstCheckerPos % 8;
+			int firstCheckerY = firstCheckerPos / 8;
+			//cout << "First checker x: " << firstCheckerX << ", y:" << firstCheckerY << endl;
+			int xDist = firstCheckerX - (kingPos % 8);
+			int xInc = min(max(xDist, -1), 1);
+			//cout << "Xinc: " << xInc << endl;
 
-		int yDist = firstCheckerY - (kingPos / 8);
-		int yInc = min(max(yDist, -1), 1);
-		//cout << "Yinc: " << yInc << endl;
+			int yDist = firstCheckerY - (kingPos / 8);
+			int yInc = min(max(yDist, -1), 1);
+			//cout << "Yinc: " << yInc << endl;
 
-		int squareDist = max(xDist, yDist);
-		array<Bitboard, 2> checkerToKingBBs = pieceToPieceBitboard({ xInc, yInc, squareDist }, kingPos % 8, kingPos / 8);
-		checkerToKingBBMove = checkerToKingBBs[0];
-		checkerToKingBBCapture = checkerToKingBBs[1];
+			int squareDist = max(xDist, yDist);
+			array<Bitboard, 2> checkerToKingBBs = pieceToPieceBitboard({ xInc, yInc, squareDist }, kingPos % 8, kingPos / 8);
+			checkerToKingBBMove = checkerToKingBBs[0];
+			checkerToKingBBCapture = checkerToKingBBs[1];
+		} else {
+			//If it isn't a sliding piece the piece that is checking them, you can't block it
+			checkerToKingBBMove = (Bitboard)0;
+			//Thus the empty checkerToKingBBMove. And you can only capture the piece
+			checkerToKingBBCapture = checkerLocations[0].checkerBitboard;
+			//Thus the checkerToKingBBCapture is the position of the checker
+		}
 	}
 	//Everypiece is of the class PieceTypeCurrPositions
 
@@ -673,7 +683,7 @@ MoveMag kingOppDir(MoveMag dir, int kingPos) {
 CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor) {
 	CheckData res;
 	int& numOfChecks = res.numOfChecks;
-	vector<Bitboard>& checkerLocations = res.checkerLocations;
+	vector<BitboardAndPieceInfo>& checkerLocations = res.checkerLocations;
 	//Can remove this line of code and just modify the allcurrpositions param. Optimize. Not really anymore as I use the param to get the original vector of bbs, can change this though.
 	Bitboard kingPosBB = allCurrPositions.colorBitboards[currColor].pieceTypes[pieceToNumber['k']].posBB[0];
 
@@ -713,13 +723,15 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor) {
 		while (checkersBB != 0 && numOfChecks != 2) {
 			numOfChecks++;
 			int checkerCurrPosition = _tzcnt_u64(checkersBB);
-			checkerLocations.push_back(1ULL << checkerCurrPosition);
+			BitboardAndPieceInfo checkerInfo = {};
+			checkerInfo.checkerBitboard = 1ULL << checkerCurrPosition;
+			checkerInfo.pieceType = pieceType;
+			checkerInfo.pos = checkerCurrPosition;
+			checkerLocations.push_back(checkerInfo);
 			setBitTo(&checkersBB, checkerCurrPosition, 0);
 		}
 	}
 	//numOfChecks and checkerLocations are references thus I can just return res.
-	//cout << "numOfChecks: " << numOfChecks << endl;
-	//cout << "WHAT?!" << endl;
 	return res;
 }
 

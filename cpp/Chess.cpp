@@ -9,10 +9,10 @@ using namespace std;
 int main(int argc, char* argv[]) {
     int depth = 5;
     int port = 8080;
-    bool color = true;
+    bool color = false;
     //string lFen = "8/8/8/2k5/2pP4/8/B7/4K3 b - d3";
     //string lFen = "8/3k3r/8/8/6N1/8/8/2K5 b - -";
-    string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq -";
+    string lFen = "r1bqkbnr/ppp1pppp/n2N4/8/8/8/PPPPPPPP/R1BQKBNR b KQkq -";
     if (argc > 1) {
         depth = stoi(argv[1]);
         if (argc > 2) {
@@ -20,7 +20,8 @@ int main(int argc, char* argv[]) {
             if (argc > 3) {
                 port = stoi(argv[3]);
                 if (argc > 4) {
-                    color = argv[4];
+                    color = stoi(argv[4]) == 1;
+                    cout << "Color: " << color << endl;
                 }
             }
         }
@@ -458,10 +459,8 @@ MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
     cout << "move.pieceType: " << move.pieceType << endl;
     move.posOfMove = moveStr["posOfMove"];
     cout << "move.posOfMove: " << move.posOfMove << endl;
-    cout << "moveStr[\"moveOrCapture\"]:" << moveStr["moveOrCapture"] << endl;
-    cout << "(int)moveStr[\"moveOrCapture\"]:" << (int)moveStr["moveOrCapture"] << endl;
     move.moveOrCapture = (int)moveStr["moveOrCapture"];
-    cout << "move.moveOrCapture: " << move.moveOrCapture << endl;
+    cout << "move.moveOrCapture :" << move.moveOrCapture << endl;
     if (moveStr.contains("xFrom")) {
         move.piece = allCurrPositions.searchPieceByPosAndType((int)moveStr["xFrom"] + ((int)moveStr["yFrom"] * 8), moveStr["pieceType"], moveStr["pieceMovingColor"]);
     } else {

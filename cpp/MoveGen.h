@@ -25,6 +25,7 @@ class CheckData;
 class LeafNodesAndCurrPos;
 class PosAndColor;
 class EvalAndBestMove;
+class BitboardAndPieceInfo;
 
 class PieceTypeCurrPositions;
 class OneColorCurrPositions;

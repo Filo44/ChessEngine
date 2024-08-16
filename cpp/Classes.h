@@ -106,7 +106,13 @@ public:
 class CheckData {
 public:
 	int numOfChecks;
-	vector<Bitboard> checkerLocations;
+	vector<BitboardAndPieceInfo> checkerLocations;
+};
+class BitboardAndPieceInfo {
+public:
+	Bitboard checkerBitboard;
+	int pos;
+	char pieceType;
 };
 
 class PieceTypeCurrPositions {

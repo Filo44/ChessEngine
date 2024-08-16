@@ -38,7 +38,7 @@ function App() {
     const [gotEvaluation, setGotEvalution] = useState(false);
     const [isMoving, setIsMoving] = useState(false);
     const [moveInput, setMoveInput] = useState("");
-    const [color, setColor] = useState(WHITE)
+    const [color, setColor] = useState(BLACK)
     const reference = {
         bb: bb,
         kb: kb,
@@ -130,9 +130,8 @@ function App() {
                 posOfMove:posOfMove,
                 moveOrCapture: moveOrCapture,
                 xFrom:xFrom,
-                yFrom:yFrom,
-                timeLeft: 2000.00
-            };
+                yFrom:yFrom
+};
             applyMove(xFrom, yFrom, xTo, yTo, pieceTypeChar);
             try {
                 const response = await fetch(
@@ -142,7 +141,7 @@ function App() {
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify(moveDesc) // Send the move data as JSON
+                        body: JSON.stringify({prevMove: moveDesc, timeLeft: 200000}) // Send the move data as JSON
                         // signal:signal
                     }
                 );
