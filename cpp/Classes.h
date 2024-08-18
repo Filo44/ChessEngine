@@ -375,4 +375,6 @@ public:
 };
 
 struct MoveAndCapBitboards {
-	Bit
+	Bitboard moveBitboard;
+	Bitboard capBitboard;
+};
