@@ -43,13 +43,13 @@ int main(int argc, char* argv[]) {
     //move.pieceType = 1;
     //move.posOfMove = 21;
     //move.moveOrCapture = 0;
-    //move.piece = 0;
+    //move.Piece = 0;
 
     
     /*MoveDesc move;
     move.pieceMovingColor = 1;
     move.moveOrCapture = 0;
-    move.piece = 0;
+    move.Piece = 0;
     move.pieceType = pieceToNumber['p'];
     move.posOfMove = 35; 
     currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
@@ -167,18 +167,12 @@ int main(int argc, char* argv[]) {
 
 PosAndColor fenToPosBitboards(std::string fen) {
     PosAndColor res = PosAndColor();
-    OneColorCurrPositions blackBitboard;
-    OneColorCurrPositions whiteBitboard;
     AllCurrPositions allPositionBitboards;
-    allPositionBitboards.colorBitboards[0] = blackBitboard;
-    allPositionBitboards.colorBitboards[1] = whiteBitboard;
-    //Make this just 12 lines, more optimized.
-    for (int color = 0; color < 2; color++) {
-        for (int i = 0; i < 6; i++) {
-            PieceTypeCurrPositions newPiece;
-            newPiece.pieceType = pieces[i];
-            allPositionBitboards.colorBitboards[color].pieceTypes[i] = newPiece; 
-        }
+    //Make this just 12 lines, more optimized?
+    for (int i = 0; i < 12; i++) {
+        PieceTypeCurrPositions newPiece;
+        newPiece.pieceType = (enum Piece)i;
+        allPositionBitboards.pieceTypePositions[i] = newPiece; 
     }
 
     int maxI = -1;
@@ -206,18 +200,17 @@ PosAndColor fenToPosBitboards(std::string fen) {
             int x = actualPos % 8;
             //cout << pieceToNumber['r'];
             //Goes to the correct colour
-            //Goes to the piece type by checking hte piece to number map
-            //then pushes the position BB by making a bit board with one 1 and pushing it to the actualPos
-            allPositionBitboards.colorBitboards[isupper(fen[i])]
-                .pieceTypes[pieceToNumber[tolower(fen[i])]]
-                .posBB.push_back(1ULL << actualPos);
+            //Goes to the Piece type by checking hte Piece to number map
+            //then sets the bit in that pos to one
+            setBitTo(&allPositionBitboards.pieceTypePositions[pieceToNumber[fen[i]]]
+                .positionBitboard, actualPos, 1);
         }
     }
 
-    allPositionBitboards.colorBitboards[0].canCastleKSide = false;
-    allPositionBitboards.colorBitboards[0].canCastleQSide = false;
-    allPositionBitboards.colorBitboards[1].canCastleKSide = false;
-    allPositionBitboards.colorBitboards[1].canCastleQSide = false;
+    allPositionBitboards.castlingRights[0].canCastleKSide = false;
+    allPositionBitboards.castlingRights[0].canCastleQSide = false;
+    allPositionBitboards.castlingRights[1].canCastleKSide = false;
+    allPositionBitboards.castlingRights[1].canCastleQSide = false;
     //cout << "maxI + 1:" << maxI + 1 << endl;
     //cout << "fen[maxI + 1]:" << fen[maxI + 1] << endl;
     //If no space detected, i.e. maxI=-1, it goes to the default values
@@ -243,10 +236,10 @@ PosAndColor fenToPosBitboards(std::string fen) {
                 bool castleRightsColor = isupper(el);
                 if (tolower(el) == 'k') {
                     //cout << (castleRightsColor ? "White" : "Black") << " can castle king side. " << endl;
-                    allPositionBitboards.colorBitboards[castleRightsColor].canCastleKSide = true;
+                    allPositionBitboards.castlingRights[castleRightsColor].canCastleKSide = true;
                 } else {
                     //cout << (castleRightsColor ? "White" : "Black") << " can castle queen side. " << endl;
-                    allPositionBitboards.colorBitboards[castleRightsColor].canCastleQSide = true;
+                    allPositionBitboards.castlingRights[castleRightsColor].canCastleQSide = true;
                 }
                 if (j == 6) {
                     maxJ = 7;
@@ -267,7 +260,7 @@ PosAndColor fenToPosBitboards(std::string fen) {
             int x = file - 97;
             //cout << "En passant. X: "<<x<<", Y:" << y<<". " << endl;
             //cout << "!res.color: " << !res.color << endl;
-            allPositionBitboards.pawnWhoDoubleMoved = allPositionBitboards.searchPieceByPosAndType(x + (y * 8), whitePawn, !res.color);
+            allPositionBitboards.pawnWhoDoubleMovedPos = x + (y * 8);
         }
     } else {
         res.color = 1;
@@ -286,16 +279,14 @@ char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL) {
             arr[i][j] = ' ';
         }
     }
-    //No clue why each piece stores an entire bitboard when there can only be one bit which is on. Optimize this later.
-    for (int color = 0; color < 2; ++color) {
-        for (int pieceI = 0; pieceI < 6; ++pieceI) {
-            for (const Bitboard bitboard : allPositionBitboardsL.colorBitboards[color].pieceTypes[pieceI].posBB) {
-                //Finds the last, and in this case only, 1
-                int pos = _tzcnt_u64(bitboard);
+    for (int pieceType = 0; pieceType < 12; pieceType++) {
+        Bitboard currCheckingBitboard = allPositionBitboardsL.pieceTypePositions[pieceType].positionBitboard;
+        while(currCheckingBitboard!=0) {
+            //Finds the last, and in this case only, 1
+            int pos = _tzcnt_u64(currCheckingBitboard);
                 
-                //y, x for arrays
-                arr[pos / 8][pos % 8] = color? toupper(pieces[pieceI]) : pieces[pieceI] ;
-            }
+            //y, x for arrays
+            arr[pos / 8][pos % 8] = pieces[pieceType];
         }
     }
     return arr;
@@ -312,14 +303,14 @@ string allPosMovesToMatrix(AllPosMoves posMoves) {
         s += ", \"combinedMoveBB\":";
         s += convertBBJS(pieceType.pieceTypeCombinedMoveBB).str();
         s += ", \"pieces\":[  ";
-        for (int j = 0; j < pieceType.posBB.size(); j++) {
-            SinglePiecePosMoves piece = pieceType.posBB[j];
+        for (int j = 0; j < pieceType.positionBitboard.size(); j++) {
+            SinglePiecePosMoves piece = pieceType.positionBitboard[j];
             s += "{\"capBitboard\": ";
             s += convertBBJS(piece.capBitboard).str();
             s += ", \"moveBitboard\": ";
             s += convertBBJS(piece.moveBitboard).str();
             s += "}";
-            if (j != (pieceType.posBB.size() - 1)) {
+            if (j != (pieceType.positionBitboard.size() - 1)) {
                 s += ", ";
             }
         }
@@ -331,6 +322,7 @@ string allPosMovesToMatrix(AllPosMoves posMoves) {
     s += "]}";
     return s;
 }
+
 ZobristHash genInitZobristHash(AllCurrPositions currPositions) {
     //When the first XOR is done, since it is instantiated to zero, the currZobristHash will become that number.
     ZobristHash currZobristHash = 0;
@@ -339,29 +331,25 @@ ZobristHash genInitZobristHash(AllCurrPositions currPositions) {
 
     for (int color = 0; color < 2; color++) {
         for (int pieceType = 0; pieceType < 6; pieceType++) {
-            int amOfPieces = currPositions.colorBitboards[color].pieceTypes[pieceType].posBB.size();
-            for (int piece = 0; piece < amOfPieces; piece++) {
-                int pos = _tzcnt_u64(currPositions.colorBitboards[color].pieceTypes[pieceType].posBB[piece]);
+            Bitboard pieceTypeBitboard = currPositions.pieceTypePositions[pieceType + (color * 6)].positionBitboard;
+            while (pieceTypeBitboard != 0) {
+                int pos = _tzcnt_u64(currPositions.pieceTypePositions[pieceType + (color * 6)].positionBitboard);
                 currZobristHash ^= ZobristSeed[color ? pieceType + 6 : pieceType][pos];
             }
         }
         //If it is white it multiplies everything by 4, or shifts it up twice
         int colorMult = color ? 4 : 0;
-        if (currPositions.colorBitboards[color].canCastleKSide) {
+        if (currPositions.castlingRights[color].canCastleKSide) {
             castlingKey |= (0b00000001 * colorMult);
         }
-        if (currPositions.colorBitboards[color].canCastleQSide) {
+        if (currPositions.castlingRights[color].canCastleQSide) {
             castlingKey |= (0b00000010 * colorMult);
         }
 
-        // Maybe don't store the piece but rather its position in terms of its file (Optimize)?
-        if (currPositions.pawnWhoDoubleMoved != -1) {
-            //White pawn because I have yet to change it to just store all the pieces in one array instead of per color
-            //and white since now it means just pawn
-            int pawnWhoDoubleMovedI = currPositions.pawnWhoDoubleMoved;
-            int pawnWhoDoubleMovedRef = currPositions.colorBitboards[color].pieceTypes[whitePawn].posBB[pawnWhoDoubleMovedI];
-            int enPassantVictimFile = _tzcnt_u64(pawnWhoDoubleMovedRef) % 8;
-            //Since it(.pawnWhoDoubleMoved) is the position of the piece who can get taken, that works just as well as a square which can get en passanted into.
+        // Maybe don't store the Piece but rather its position in terms of its file (Optimize)?
+        if (currPositions.pawnWhoDoubleMovedPos != -1) {
+            int enPassantVictimFile = currPositions.pawnWhoDoubleMovedPos % 8;
+            //Since it(.pawnWhoDoubleMovedPos) is the position of the Piece who can get taken, that works just as well as a square which can get en passanted into.
             currZobristHash ^= EnPassantFileSeed[enPassantVictimFile];
         }
     }
@@ -462,11 +450,11 @@ MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
     move.moveOrCapture = (int)moveStr["moveOrCapture"];
     cout << "move.moveOrCapture :" << move.moveOrCapture << endl;
     if (moveStr.contains("xFrom")) {
-        move.piece = allCurrPositions.searchPieceByPosAndType((int)moveStr["xFrom"] + ((int)moveStr["yFrom"] * 8), moveStr["pieceType"], moveStr["pieceMovingColor"]);
+        move.posFrom = (int)moveStr["xFrom"] + ((int)moveStr["yFrom"] * 8);
     } else {
-        move.piece = moveStr["piece"];
+        move.posFrom = moveStr["posFrom"];
     }
-    cout << "move.piece: " << move.piece << endl;
+    cout << "move.posFrom: " << move.posFrom<< endl;
     return move;
 }
 string convertMoveToJS(MoveDesc move) {
@@ -478,8 +466,8 @@ string convertMoveToJS(MoveDesc move) {
     res += to_string(move.posOfMove);
     res += ", \"moveOrCapture\":";
     res += to_string(move.moveOrCapture);
-    res += ", \"piece\":";
-    res += to_string(move.piece);
+    res += ", \"posFrom\":";
+    res += to_string(move.posFrom);
     res += "}";
     return res;
 }
@@ -524,10 +512,10 @@ EvalAndBestMove getMoveAndApplyFromPos(AllCurrPositions& allPositionBitboards, Z
 
 string posAndGameStateToJS(AllCurrPositions allPositionBitboards, EvalAndBestMove resultOfMinMaxSearch) {
     string res = "{\"newPos\": " + convertToJSArr(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) + ", \"move\":" + convertMoveToJS(resultOfMinMaxSearch.bestMove)
-        + ", \"canWhiteCastleKSide\":" + (allPositionBitboards.colorBitboards[1].canCastleKSide ? "true" : "false")
-        + ", \"canWhiteCastleQSide\":" + (allPositionBitboards.colorBitboards[1].canCastleQSide ? "true" : "false")
-        + ", \"canBlackCastleKSide\":" + (allPositionBitboards.colorBitboards[0].canCastleKSide ? "true" : "false")
-        + ", \"canBlackCastleQSide\":" + (allPositionBitboards.colorBitboards[0].canCastleQSide ? "true" : "false")
+        + ", \"canWhiteCastleKSide\":" + (allPositionBitboards.castlingRights[1].canCastleKSide ? "true" : "false")
+        + ", \"canWhiteCastleQSide\":" + (allPositionBitboards.castlingRights[1].canCastleQSide ? "true" : "false")
+        + ", \"canBlackCastleKSide\":" + (allPositionBitboards.castlingRights[0].canCastleKSide ? "true" : "false")
+        + ", \"canBlackCastleQSide\":" + (allPositionBitboards.castlingRights[0].canCastleQSide ? "true" : "false")
         + "}";
     cout << "Responding: " << res;
     return res;

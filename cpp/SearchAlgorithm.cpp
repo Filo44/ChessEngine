@@ -43,7 +43,7 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 			thisMove.pieceType = i;
 			thisMove.pieceMovingColor = color;
 
-			for (int j = 0; j < pieceTypePosMoves.posBB.size(); j++) {
+			for (int j = 0; j < pieceTypePosMoves.positionBitboard.size(); j++) {
 				if (time(nullptr) > cutOffTime) {
 					EvalAndBestMove abortedRes;
 					abortedRes.eval = bestEval;
@@ -59,16 +59,16 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 				//Only check capture moves
 				for (int moveOrCapture = 0; moveOrCapture < 2; moveOrCapture++) {
 
-					Bitboard currBitboard = (moveOrCapture == 0) ? pieceTypePosMoves.posBB[j].moveBitboard : pieceTypePosMoves.posBB[j].capBitboard;
+					Bitboard currBitboard = (moveOrCapture == 0) ? pieceTypePosMoves.positionBitboard[j].moveBitboard : pieceTypePosMoves.positionBitboard[j].capBitboard;
 					thisMove.moveOrCapture = (bool)moveOrCapture;
 
 					while (currBitboard != 0) {
 
 						int posOfNextBit = _tzcnt_u64(currBitboard);
 
-						// i = pieceType, j = piece
+						// i = pieceType, j = Piece
 						//If its a pawn, and it is moving and its original x is not the same as the x to where it is moving it is en passant
-						if (i == pieceToNumber['p'] && moveOrCapture == 0 && (_tzcnt_u64(colorCurrPositions.pieceTypes[i].posBB[j]) % 8) != (posOfNextBit % 8)) {
+						if (i == pieceToNumber['p'] && moveOrCapture == 0 && (_tzcnt_u64(colorCurrPositions.pieceTypes[i].positionBitboard[j]) % 8) != (posOfNextBit % 8)) {
 							enPassant++;
 						}
 						thisMove.posOfMove = posOfNextBit;
@@ -140,11 +140,11 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 			thisMove.pieceType = i;
 			thisMove.pieceMovingColor = color;
 
-			for (int j = 0; j < pieceTypePosMoves.posBB.size(); j++) {
+			for (int j = 0; j < pieceTypePosMoves.positionBitboard.size(); j++) {
 				thisMove.piece = j;
 				for (int moveOrCapture = 0; moveOrCapture < 2; moveOrCapture++) {
 
-					Bitboard currBitboard = (moveOrCapture == 0) ? pieceTypePosMoves.posBB[j].moveBitboard : pieceTypePosMoves.posBB[j].capBitboard;
+					Bitboard currBitboard = (moveOrCapture == 0) ? pieceTypePosMoves.positionBitboard[j].moveBitboard : pieceTypePosMoves.positionBitboard[j].capBitboard;
 					thisMove.moveOrCapture = (bool)moveOrCapture;
 
 					while (currBitboard != 0) {
@@ -152,9 +152,9 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 
 						int posOfNextBit = _tzcnt_u64(currBitboard);
 						
-						// i = pieceType, j = piece
+						// i = pieceType, j = Piece
 						//If its a pawn, and it is moving and its original x is not the same as the x to where it is moving it is en passant
-						if (i == pieceToNumber['p'] && moveOrCapture == 0 && (_tzcnt_u64(colorCurrPositions.pieceTypes[i].posBB[j]) % 8) != (posOfNextBit % 8)) {
+						if (i == pieceToNumber['p'] && moveOrCapture == 0 && (_tzcnt_u64(colorCurrPositions.pieceTypes[i].positionBitboard[j]) % 8) != (posOfNextBit % 8)) {
 							enPassant++;
 						}
 						thisMove.posOfMove = posOfNextBit;
@@ -207,22 +207,22 @@ ZobristHash applyMovesTo(AllCurrPositions& allCurrPositions, vector<MoveDesc> mo
 
 double simpleEval(AllCurrPositions allCurrPositions, bool colorToMove, ZobristHash currZobristHash) {
 	unordered_map<char, double> pieceTypeToVal = {
-		{'r', 5.00},
-		{'n', 3.00},
-		{'b', 3.00},
-		{'q', 9.00},
-		{'p', 1.00}
+		{rook, 5.00},
+		{knight, 3.00},
+		{bishop, 3.00},
+		{queen, 9.00},
+		{pawn, 1.00}
 	};
 	double total = 0;
 	for (int color = 0; color < 2; color++) {
 		int mult = (color) ? 1 : -1;
-		OneColorCurrPositions colorCurrPositions = allCurrPositions.colorBitboards[color];
-		for (int i = 0; i < 6; i++) {
-			if (pieceToNumber['k'] == i) {
+		for (int pieceType = 0; pieceType < 6; pieceType++) {
+			// didn't want to change it because it just makes more sense in this function
+			if (pieceType == king) {
 				continue;
 			}
-			PieceTypeCurrPositions pieceTypeCurrPositions = colorCurrPositions.pieceTypes[i];
-			total += (pieceTypeCurrPositions.posBB.size() * pieceTypeToVal[pieces[i]]) * mult;
+			PieceTypeCurrPositions pieceTypeCurrPositions = allCurrPositions.pieceTypePositions[pieceType];
+			total += (pieceTypeCurrPositions.positionBitboard.size() * pieceTypeToVal[pieceType]) * mult;
 		}
 	}
 	AllPosMoves posMoves = fullMoveGenLoop(colorToMove, allCurrPositions, currZobristHash);

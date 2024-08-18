@@ -4,26 +4,33 @@
 #include "httplib.h"
 #include <nlohmann/json.hpp>
 #include <string>
-#include <unordered_map>
 #include <cstdint>
 #include <unordered_map>
 #include <ctime>
 
 using namespace nlohmann;
 
-enum piece {
-	whiteRook = 0,
-	whiteKnight = 1,
-	whiteBishop = 2,
-	whiteQueen = 3,
-	whiteKing = 4,
-	whitePawn = 5,
-	blackRook = 6,
-	blackKnight = 7,
-	blackBishop = 8,
-	blackQueen = 9,
-	blackKing = 10,
-	blackPawn = 11,
+enum Piece {
+	blackRook = 0,
+	blackKnight = 1,
+	blackBishop = 2,
+	blackQueen = 3,
+	blackKing = 4,
+	blackPawn = 5,
+	whiteRook = 6,
+	whiteKnight = 7,
+	whiteBishop = 8,
+	whiteQueen = 9,
+	whiteKing = 10,
+	whitePawn = 11,
+};
+enum PieceWithoutColor {
+	rook = 0,
+	knight = 1,
+	bishop = 2,
+	queen = 3,
+	king = 4,
+	pawn = 5
 };
 
 using namespace std;
