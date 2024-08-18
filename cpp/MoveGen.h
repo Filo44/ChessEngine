@@ -47,3 +47,13 @@ void calcCombinedMoves(AllPosMoves& posMoves);
 
 bool checkBounds(int x, int y);
 vector<Bitboard> arrayToVector(array<Bitboard, 2> arr);
+
+inline vector<MoveDesc> addVectors(vector<MoveDesc> v1, vector<MoveDesc> v2) {
+	if (v1.size() > v2.size()) {
+		v1.insert(v1.end(), v2.begin(), v2.end());
+		return v1;
+	} else {
+		v2.insert(v2.end(), v1.begin(), v1.end());
+		return v2;
+	}
+}
