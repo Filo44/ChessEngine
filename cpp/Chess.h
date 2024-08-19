@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <ctime>
+#include <intrin.h>
 
 using namespace nlohmann;
 
@@ -55,24 +56,24 @@ class EvalAndBestMove;
 class BitboardAndPieceInfo;
 
 // char** fenToMatrix(std::string fen);
-void delete2DArray(char **arr, int rows);
-string convertToString(char **arr, int cols, int rows);
-string convertToJSArr(char **arr, int cols, int rows);
+void delete2DArray(char** arr, int rows);
+string convertToString(char** arr, int cols, int rows);
+string convertToJSArr(char** arr, int cols, int rows);
 string convertVofBBJS(vector<Bitboard> matrixVector);
 stringstream convertBBJS(Bitboard curBB);
 string allPosMovesToMatrix(AllPosMoves posMoves);
 ZobristHash genInitZobristHash(AllCurrPositions currPositions);
-EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable);
+//EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable);
 string convertMoveToJS(MoveDesc move);
 EvalAndBestMove getMoveAndApplyFromPos(AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash, double timeLeft, bool color);
-string posAndGameStateToJS(AllCurrPositions allPositionBitboards, EvalAndBestMove resultOfMinMaxSearch); 
+string posAndGameStateToJS(AllCurrPositions allPositionBitboards, EvalAndBestMove resultOfMinMaxSearch);
 
 PosAndColor fenToPosBitboards(std::string fen);
-char **allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
+char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
 MoveDesc parseMove(json moveStr, AllCurrPositions allCurrPositions);
 double timeManagementFunction(double timeRemaining);
 
-inline void setBitTo(Bitboard *initBB, int posX, int posY, bool value)
+inline void setBitTo(Bitboard* initBB, int posX, int posY, bool value)
 {
 	if (value == 0)
 	{
@@ -88,7 +89,8 @@ inline void setBitTo(Bitboard* initBB, int pos, bool value)
 	if (value == 0)
 	{
 		*initBB &= ~(1ULL << pos);
-	} else
+	}
+	else
 	{
 		*initBB |= (1ULL << pos);
 	}
@@ -101,4 +103,8 @@ inline bool getBit(Bitboard bb, int posX, int posY)
 inline bool getBit(Bitboard bb, int pos)
 {
 	return (bb >> pos) & 1;
+}
+
+inline int amOfSetBits(Bitboard bitboard) {
+	return __popcnt(bitboard);
 }

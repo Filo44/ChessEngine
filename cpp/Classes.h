@@ -61,7 +61,8 @@ public:
 		for (const SinglePiecePosMoves singlePiece : positionBitboard) {
 			if (isMove) {
 				res.push_back(singlePiece.moveBitboard);
-			} else {
+			}
+			else {
 				res.push_back(singlePiece.capBitboard);
 			}
 		}
@@ -129,21 +130,10 @@ public:
 	char pieceType;
 };
 
-//class PieceTypeCurrPositions {
-//public:
-//	Piece pieceType;
-//	Bitboard positionBitboard;
-//};
-
-
-//class OneColorCurrPositions {
-//public:
-//	PieceTypeCurrPositions pieceTypes[6];
-//	//Maybe don't calculate this every time? Thus don't include it here. Don't know, may be worse.
-//	Bitboard colorCombinedBB;
-//	bool canCastleQSide = true;
-//	bool canCastleKSide = true;
-//};
+struct CastlingRights {
+	bool canCastleKSide;
+	bool canCastleQSide;
+};
 
 class AllCurrPositions {
 public:
@@ -152,47 +142,17 @@ public:
 	Bitboard colorCombinedPosBitboard[2];
 	int pawnWhoDoubleMovedPos = -1;
 	CastlingRights castlingRights[2];
-	/*PieceInfo searchPieceByPos(int pos, bool colorOfPiece) {
-		int pieceType = -1;
-		for (int i = 0; i < 6; i++) {
-			if (getBit(colorBitboards[colorOfPiece].pieceTypes[i].positionBitboard, pos)) {
-				pieceType = i;
-				break;
+	int searchPieceType(bool color, int pos) {
+		for (int i = color * 6; i < 6 + (color * 6); i++) {
+			if (getBit(pieceTypePositions[i], pos)) {
+				return i;
 			}
 		}
-		if (pieceType == -1) {
-			cout << "ERROR! piecetype = -1" << endl;
-			cout << convertToString(allPositionBitboardsToMatrix(*this), 8, 8) << endl;
-			cout << "Damn you breakpoints!" << endl;
-		}
-		int Piece = -1;
-		for (int j = colorBitboards[colorOfPiece].pieceTypes[pieceType].positionBitboard.size() - 1; j >= 0; j--) {
-			if (getBit(colorBitboards[colorOfPiece].pieceTypes[pieceType].positionBitboard[j], pos)) {
-				Piece = j;
-				break;
-			}
-		}
-		if (Piece == -1) {
-			cout << "ERROR! Piece = -1" << endl;
-		}
-		return { pieceType, Piece };
 	}
-	int searchPieceByPosAndType(int pos, int pieceType, bool colorOfPiece) {
-		int Piece = -1;
-		for (int j = pieceTypesPositions[pieceType].positionBitboard.size() - 1; j >= 0; j--) {
-			if (getBit(colorBitboards[colorOfPiece].pieceTypes[pieceType].positionBitboard[j], pos)) {
-				Piece = j;
-				break;
-			}
-		}
-		return Piece;
-	}*/
-	ZobristHash applyMove(MoveDesc move, ZobristHash currZobristHash) {
-		////REMOVE AFTER
-		string stringRepOfBoardBeforeChanges = convertToString(allPositionBitboardsToMatrix(*this), 8, 8);
 
-		Bitboard& thisPieceTypeBitboard = pieceTypePositions[move.pieceType].positionBitboard;
-		int pieceLocation = _tzcnt_u64(thisPieceTypeBitboard);
+	ZobristHash applyMove(MoveDesc move, ZobristHash currZobristHash) {
+
+		Bitboard& thisPieceTypeBitboard = pieceTypePositions[move.pieceType];
 		//Buffers the application of the pawnWhoDoubleMovedPos such that we can delete and set the new pawnWhoDoubleMovedPos at the end while still being able to read it
 		int pawnWhoDoubleMovedPosBuffer = -1;
 
@@ -201,31 +161,33 @@ public:
 		int moveToY = move.posOfMove / 8;
 		bool color = move.pieceMovingColor;
 		bool moveOrCapture = move.moveOrCapture;
+		int posFrom = move.posFrom;
 
 		int forwards = (color) ? -1 : 1;
 
-		int pieceLocationX = pieceLocation % 8;
-		int pieceLocationY = pieceLocation / 8;
+		int posFromX = posFrom % 8;
+		int posFromY = posFrom / 8;
 
 		bool enPassantThroughCapture = false;
 
 		//Checks if a pawn has moved two squares, thus opening it up to en passant
-		if (move.pieceType == pieceToNumber['p']) {
-			if (abs((moveToY - pieceLocationY)) == 2) {
+		if (move.pieceType == (color ? whitePawn : blackPawn)) {
+			if (abs((moveToY - posFromY)) == 2) {
 				pawnWhoDoubleMovedPosBuffer = move.posOfMove;
 				//cout << "Added(XORed) the number for file: " << moveToX << endl;
 				//amOfEnPassantXORAdds++;
 				currZobristHash ^= EnPassantFileSeed[moveToX];
 			}
 			//If it is a capture en passant you should move it one forwards
-			else if (pieceLocationY == moveToY) {
+			else if (posFromY == moveToY) {
 				//Can't just add forwards to moveToY because it removes the Piece using moveToY
 				//Thus I have to make it when it is a en passant through capture move it adds forward to the Y component of where it adds the Piece
 				enPassantThroughCapture = true;
 				//cout << "Capture en passant sdfsfsd" << endl;
 
 			}
-		} else if (move.pieceType == pieceToNumber['k']) {
+		}
+		else if (move.pieceType == (color ? whiteKing : blackKing)) {
 			uint8_t initCastlingKey = 0b00000000;
 			//Checks white
 			if (castlingRights[1].canCastleKSide) {
@@ -263,48 +225,42 @@ public:
 
 			bool castlingQSide = false;
 			bool castlingKSide = false;
-			if ((pieceLocationX - moveToX) == 2) {
+			if ((posFromX - moveToX) == 2) {
 				castlingQSide = true;
-			} else if ((pieceLocationX - moveToX) == -2) {
+			}
+			else if ((posFromX - moveToX) == -2) {
 				castlingKSide = true;
 			}
 
-			//cout << "castlingQSide: " << castlingQSide << endl;
-			//cout << "castlingKSide: " << castlingKSide << endl;
 			if (castlingQSide || castlingKSide) {
 				//The rook moves more towards the middle, if castling queen side, king moves to the left(X dec) thus rook to the right(X inc)
 				int rookMovingToX = moveToX + ((castlingQSide) ? 1 : -1);
 				int rookMovingFromX = ((castlingQSide) ? 0 : 7);
-				//cout << "rookMovingFromX: " << rookMovingFromX << endl;
-				//int rookMovingToY = moveToY;
-				vector<Bitboard>& rooks = colorBitboards[color].pieceTypes[pieceToNumber['r']].positionBitboard;
-				for (int i = 0; i < rooks.size(); i++) {
-					Bitboard& singleRookBitboard = rooks[i];
-					if (getBit(singleRookBitboard, rookMovingFromX, moveToY)) {
-						singleRookBitboard = (1ULL << rookMovingToX + (moveToY * 8));
-						break;
-					}
-				}
+
+				Bitboard& rooksBitboard = pieceTypePositions[color ? whiteRook : blackRook];
+				setBitTo(&rooksBitboard, rookMovingFromX + (moveToY * 8), 0);
+				setBitTo(&rooksBitboard, rookMovingToX + (moveToY * 8), 1);
 			}
 
-		} else if (move.pieceType == pieceToNumber['r']) {
+		}
+		else if (move.pieceType == (color ? whiteRook : blackRook)) {
 			//White's starting rank is at y=7. Check the pawn starting rank for proof
 			int rookStartingRank = color ? 7 : 0;
 			//If a rook moves from those squares it must mean that they disable that side's castling
-			if (pieceLocationY == rookStartingRank) {
+			if (posFromY == rookStartingRank) {
 				//Queen and king side have the same x for both sides
-				if (pieceLocationX == 0) {
+				if (posFromX == 0) {
 					castlingRights[color].canCastleQSide = false;
-				} else if (pieceLocationX == 7) {
+				}
+				else if (posFromX == 7) {
 					castlingRights[color].canCastleKSide = false;
 				}
 			}
 		}
 
 		//Removes Piece in its initial location
-		setBitTo(&thisPieceTypeBitboard, pieceLocationX, pieceLocationY, 0);
-		//Obviously change this later, it will trip an error though
-		currZobristHash ^= ZobristSeed[color ? move.pieceType + 6 : move.pieceType][pieceLocation];
+		setBitTo(&thisPieceTypeBitboard, posFromX, posFromY, 0);
+		currZobristHash ^= ZobristSeed[color ? move.pieceType + 6 : move.pieceType][posFrom];
 
 		//Puts the Piece in its new location
 		setBitTo(&thisPieceTypeBitboard, moveToX, moveToY + (enPassantThroughCapture ? forwards : 0), 1);
@@ -313,7 +269,7 @@ public:
 		//There are two ways of doing an en passant move, the move and the capture.
 		//The following statements check whether it was a move en passant and change it to a takes en passent
 		//Which the capture check will take
-		if (move.pieceType == pieceToNumber['p'] && !moveOrCapture && moveToX != pieceLocationX) {
+		if (move.pieceType == pieceToNumber['p'] && !moveOrCapture && moveToX != posFromX) {
 			//cout << "Move en passant" << endl;
 			moveOrCapture = CAPTURE;
 			//Because if it is a move en passant you want to remove the Piece that is one square behind it.
@@ -323,47 +279,23 @@ public:
 		//Removes Piece there
 		if (moveOrCapture == CAPTURE) {
 
-			//Not really a binary search, still close enough
-			//Please do optimize if you(I speak to future-me in 2nd person) can
-
-			//cout << "pieceType:" <<pieceType << endl;
-			//cout << "Piece:" <<Piece << endl;
 			//(moveToX + (moveToY*8))!=move.posOfMove OK?! BECAUSE IF IT EN PASSANT I ONLY CHANGE THE MOVETOY
-			PieceInfo toCapturePiece = searchPieceByPos(moveToX + (moveToY * 8), !color);
+			int toCapturePieceType = searchPieceType(moveToX + (moveToY * 8), !color);
 
-			PieceTypeCurrPositions& pieceTypePiece = colorBitboards[!color].pieceTypes[toCapturePiece.pieceType];
-			//cout << "firstEl: " << pieceTypePiece.positionBitboard[0] << endl;;
-			pieceTypePiece.positionBitboard.erase(pieceTypePiece.positionBitboard.begin() + toCapturePiece.piece);
-			currZobristHash ^= ZobristSeed[!color ? toCapturePiece.pieceType + 6 : toCapturePiece.pieceType][move.posOfMove];
+			setBitTo(&pieceTypePositions[toCapturePieceType], moveToX + (moveToY * 8), 0);
+			currZobristHash ^= ZobristSeed[toCapturePieceType][moveToX + (moveToY * 8)];
 		}
 
-		int pawnWhoDoubleMovedI = pawnWhoDoubleMovedPos;
-		if (pawnWhoDoubleMovedI != -1) {
-			//White pawn currently means normal pawn
-			int pawnWhoDoubleMovedPos = _tzcnt_u64(colorBitboards[move.pieceMovingColor].pieceTypes[whitePawn].positionBitboard[pawnWhoDoubleMovedI]);
-			//cout << "Removed(XORed): " << EnPassantFileSeed[pawnWhoDoubleMovedPos % 8] << endl;
+		if (pawnWhoDoubleMovedPos != -1) {
 			currZobristHash ^= EnPassantFileSeed[pawnWhoDoubleMovedPos % 8];
-			//amOfEnPassantXORRemovals++;
 		}
 		//Assigns the buffer, if the buffer hasn't been changed since instantiation it is -1 as that is the instantiated value.
 		pawnWhoDoubleMovedPos = pawnWhoDoubleMovedPosBuffer;
-
-
-		////REMOVE AFTER
-		//if (colorBitboards[0].pieceTypes[pieceToNumber['k']].positionBitboard.size() == 0) {
-		//	cout << "No more black king :/" << endl;
-		//}else if (colorBitboards[1].pieceTypes[pieceToNumber['k']].positionBitboard.size() == 0) {
-		//	cout << "No more white king :/" << endl;
-		//}
 
 		//Toggle turn
 		currZobristHash ^= SideToMoveIsBlack;
 		return currZobristHash;
 	}
-};
-struct CastlingRights {
-	bool canCastleKSide;
-	bool canCastleQSide;
 };
 
 struct EvalAndBestMove {
