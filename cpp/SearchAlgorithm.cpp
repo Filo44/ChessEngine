@@ -81,9 +81,9 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 						//If it's white, you want to take the best move, thus the higher val. Opposite for black
 						EvalAndBestMove result = minMax(newPositionsAfterMove, !color, depthCD - 1, localZobristHash, cutOffTime);
 						if (result.abortedDueToTime) {
-							EvalAndBestMove abortedRes; 
-							abortedRes.eval = bestEval; 
-							abortedRes.depth = depthCD; 
+							EvalAndBestMove abortedRes;
+							abortedRes.eval = bestEval;
+							abortedRes.depth = depthCD;
 							abortedRes.noMoves = bestMove.nullMove;
 							abortedRes.bestMove = bestMove;
 							abortedRes.abortedDueToTime = true;
@@ -108,7 +108,7 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 		posSearchRes.bestMove = bestMove;
 		transpositionTable[currZobristHash] = posSearchRes;
 		return posSearchRes;
-	} else{
+	} else {
 		EvalAndBestMove res;
 		res.eval = simpleEval(allCurrPositions, color, currZobristHash);
 		return res;
@@ -151,7 +151,7 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 						//cout << "HELLO" << endl;
 
 						int posOfNextBit = _tzcnt_u64(currBitboard);
-						
+
 						// i = pieceType, j = Piece
 						//If its a pawn, and it is moving and its original x is not the same as the x to where it is moving it is en passant
 						if (i == pieceToNumber['p'] && moveOrCapture == 0 && (_tzcnt_u64(colorCurrPositions.pieceTypes[i].positionBitboard[j]) % 8) != (posOfNextBit % 8)) {
@@ -166,7 +166,7 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 						//cout << "Depth: " << depthCD << endl;
 						if (depthCD == 0) {
 							//cout << "Depth = 0" << endl;
-							if (moveOrCapture==1) {
+							if (moveOrCapture == 1) {
 								captures++;
 							}
 						}
@@ -198,7 +198,7 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 
 ZobristHash applyMovesTo(AllCurrPositions& allCurrPositions, vector<MoveDesc> movesTo, ZobristHash currZobristHash) {
 	//May have to reverse for loop
-	for (int i = movesTo.size() - 1; i >=0; i--) {
+	for (int i = movesTo.size() - 1; i >= 0; i--) {
 		MoveDesc move = movesTo[i];
 		allCurrPositions.applyMove(move, currZobristHash);
 	}

@@ -101,13 +101,18 @@ public:
 struct MoveCapAndMoveDescs {
 	Bitboard moveBitboard;
 	Bitboard capBitboard;
+	MovesByPos moves;
+};
+struct MoveCapAndMoveVector {
+	Bitboard moveBitboard;
+	Bitboard capBitboard;
 	vector<MoveDesc> moves;
 };
 struct MoveCapPinnedAndMoves {
 	Bitboard moveBitboard;
 	Bitboard capBitboard;
 	vector<PinnedPieceData> pinnedPieces = {};
-	vector<MoveDesc> moves;
+	MovesByPos moves;
 	int enPassantCapPos = -1;
 };
 
