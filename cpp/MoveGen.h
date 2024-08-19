@@ -13,6 +13,7 @@ using namespace std;
 using Bitboard = uint64_t;
 using MoveMag = array<int, 3>;
 using ZobristHash = uint64_t;
+using MovesByPos = array<vector<MoveDesc>, 64>;
 
 class MoveDesc;
 class SinglePiecePosMoves;

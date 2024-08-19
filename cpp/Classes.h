@@ -92,14 +92,25 @@ public:
 	Bitboard attacking;
 	vector<PinnedPieceData> pinnedPieces;
 };
-//MoveCapAndPinnedBBs
-struct MoveCapAndPinnedBBs {
+//struct MoveCapAndPinnedBBs {
+//	Bitboard moveBitboard;
+//	Bitboard capBitboard;
+//	vector<PinnedPieceData> pinnedPieces = {};
+//	int enPassantCapPos = -1;
+//};
+struct MoveCapAndMoveDescs {
+	Bitboard moveBitboard;
+	Bitboard capBitboard;
+	vector<MoveDesc> moves;
+};
+struct MoveCapPinnedAndMoves {
 	Bitboard moveBitboard;
 	Bitboard capBitboard;
 	vector<PinnedPieceData> pinnedPieces = {};
+	vector<MoveDesc> moves;
 	int enPassantCapPos = -1;
 };
-//Something else
+
 
 class CheckData {
 public:
