@@ -21,6 +21,9 @@ constexpr auto MOVE = 0;
 constexpr auto PIECE_TYPE = 0;
 constexpr auto PIECE = 1;
 
+constexpr auto BLACK = 0;
+constexpr auto WHITE = 1;
+
 
 using namespace std;
 

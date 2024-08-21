@@ -9,9 +9,9 @@ using namespace std;
 int main(int argc, char* argv[]) {
 	int depth = 5;
 	int port = 8080;
-	bool color = true;
+	bool color = false;
 	//string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
-	string lFen = "8/8/5k2/8/2K5/3p4/8/4R3 w - -";
+	string lFen = "8/3p4/8/4P3/8/1K4k1/8/8 b - -";
 	if (argc > 1) {
 		depth = stoi(argv[1]);
 		if (argc > 2) {
@@ -41,12 +41,22 @@ int main(int argc, char* argv[]) {
 	cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
 	cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
 
-	//MoveDesc move;
-	//move.pieceMovingColor = 1;
-	//move.normalizedPieceType = 1;
-	//move.posOfMove = 21;
-	//move.moveOrCapture = 0;
-	//move.Piece = 0;
+	MoveDesc move;
+	move.pieceMovingColor = BLACK;
+	move.moveOrCapture = MOVE;
+	move.pieceType = blackPawn;
+	move.posOfMove = 27;
+	move.posFrom = 11;
+
+	currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
+	posMoves = fullMoveGenLoop(!color, allPositionBitboards, currZobristHash);
+	cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
+	cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
+
+	currZobristHash = allPositionBitboards.applyMove(posMoves[8], currZobristHash);
+	posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
+	cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
+	cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
 
 	//amountOfLeafNodes = 0;
 	//captures = 0;
@@ -449,8 +459,8 @@ MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
 	MoveDesc move;
 	move.pieceMovingColor = (bool)moveStr["pieceMovingColor"];
 	cout << "move.pieceMovingColor: " << move.pieceMovingColor << endl;
-	move.pieceType = moveStr["normalizedPieceType"];
-	cout << "move.normalizedPieceType: " << move.pieceType << endl;
+	move.pieceType = moveStr["pieceType"];
+	cout << "move.pieceType: " << move.pieceType << endl;
 	move.posOfMove = moveStr["posOfMove"];
 	cout << "move.posOfMove: " << move.posOfMove << endl;
 	move.moveOrCapture = (int)moveStr["moveOrCapture"];
@@ -467,7 +477,7 @@ MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
 string convertMoveToJS(MoveDesc move) {
 	string res = "{\"pieceMovingColor\":";
 	res += move.pieceMovingColor ? "true" : "false";
-	res += ", \"normalizedPieceType\":";
+	res += ", \"pieceType\":";
 	res += to_string(move.pieceType);
 	res += ", \"posOfMove\":";
 	res += to_string(move.posOfMove);
