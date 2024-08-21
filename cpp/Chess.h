@@ -4,7 +4,6 @@
 #include "httplib.h"
 #include <nlohmann/json.hpp>
 #include <string>
-#include <cstdint>
 #include <unordered_map>
 #include <ctime>
 #include <intrin.h>
@@ -63,7 +62,7 @@ string convertVofBBJS(vector<Bitboard> matrixVector);
 stringstream convertBBJS(Bitboard curBB);
 string allPosMovesToMatrix(AllPosMoves posMoves);
 ZobristHash genInitZobristHash(AllCurrPositions currPositions);
-//EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable);
+EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable);
 string convertMoveToJS(MoveDesc move);
 EvalAndBestMove getMoveAndApplyFromPos(AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash, double timeLeft, bool color);
 string posAndGameStateToJS(AllCurrPositions allPositionBitboards, EvalAndBestMove resultOfMinMaxSearch);
@@ -71,6 +70,7 @@ string posAndGameStateToJS(AllCurrPositions allPositionBitboards, EvalAndBestMov
 PosAndColor fenToPosBitboards(std::string fen);
 char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
 MoveDesc parseMove(json moveStr, AllCurrPositions allCurrPositions);
+string convertVectorOfMovesToJs(vector<MoveDesc> moves);
 double timeManagementFunction(double timeRemaining);
 
 inline void setBitTo(Bitboard* initBB, int posX, int posY, bool value)

@@ -9,10 +9,9 @@ using namespace std;
 int main(int argc, char* argv[]) {
 	int depth = 5;
 	int port = 8080;
-	bool color = false;
-	//string lFen = "8/8/8/2k5/2pP4/8/B7/4K3 b - d3";
-	//string lFen = "8/3k3r/8/8/6N1/8/8/2K5 b - -";
-	string lFen = "r1bqkbnr/ppp1pppp/n2N4/8/8/8/PPPPPPPP/R1BQKBNR b KQkq -";
+	bool color = true;
+	//string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+	string lFen = "8/8/5k2/8/2K5/3p4/8/4R3 w - -";
 	if (argc > 1) {
 		depth = stoi(argv[1]);
 		if (argc > 2) {
@@ -33,48 +32,39 @@ int main(int argc, char* argv[]) {
 	PosAndColor gameState = fenToPosBitboards(lFen);
 	AllCurrPositions allPositionBitboards = gameState.allCurrPositions;
 	//bool color = gameState.color;
+	cout << "Calculated gamestate" << endl;
+	//cout << "Board: " << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
 
 	ZobristHash currZobristHash = genInitZobristHash(allPositionBitboards);
 	cout << "Calculated the zobrist hash" << endl;
 	vector<MoveDesc> posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
+	cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
+	cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
 
 	//MoveDesc move;
 	//move.pieceMovingColor = 1;
-	//move.pieceType = 1;
+	//move.normalizedPieceType = 1;
 	//move.posOfMove = 21;
 	//move.moveOrCapture = 0;
 	//move.Piece = 0;
 
-
-	/*MoveDesc move;
-	move.pieceMovingColor = 1;
-	move.moveOrCapture = 0;
-	move.Piece = 0;
-	move.pieceType = pieceToNumber['p'];
-	move.posOfMove = 35;
-	currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
-
-	posMoves = fullMoveGenLoop(!color, allPositionBitboards, currZobristHash);*/
 	//amountOfLeafNodes = 0;
 	//captures = 0;
 	//enPassant = 0;
 	//totPos = 0;
-	////amOfEnPassantXORAdds = 0;
-	////amOfEnPassantXORRemovals = 0;
 	//hypos = 0;
 	//transpositionTablePerft = {};
+	////transpositionTable = {};
+	//cout << "Starting the perft search " << endl;
 	//uint64_t actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash);
 	//cout << "actualAmountOfLeafNodes: " << actualAmountOfLeafNodes << endl;
 	//cout << "enPassant: " << enPassant << endl;
 	//cout << "captures: " << captures << endl;
 	//cout << "totPos: " << totPos << endl;
-	////cout << "amOfEnPassantXORAdds : " << amOfEnPassantXORAdds << endl;
-	////cout << "amOfEnPassantXORRemovals: " << amOfEnPassantXORRemovals<< endl;
-	////cout << "standingEnPassantXORs: " << amOfEnPassantXORAdds - amOfEnPassantXORRemovals<< endl;
 	//cout << "hypos: " << hypos << endl;
 	//return actualAmountOfLeafNodes;
 
-	transpositionTable = {};
+	//transpositionTable = {};
 	/*EvalAndBestMove res = minMax(allPositionBitboards, color, depth, currZobristHash);
 	cout << "Eval " << res.eval << endl;
 	cout << "Hi" << endl;*/
@@ -96,14 +86,13 @@ int main(int argc, char* argv[]) {
 		res.set_content("", "text/plain");
 		});
 
-
-	// Handle GET requests
-	svr.Get("/data", [&allPositionBitboards, &posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
-		char** arr = allPositionBitboardsToMatrix(allPositionBitboards);
-		res.set_content(convertToJSArr(arr, 8, 8), "text/plain");
-		res.set_header("Access-Control-Allow-Origin", "*");
-		delete2DArray(arr, 8);
-		});
+	//// Handle GET requests
+	//svr.Get("/data", [&allPositionBitboards, &posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
+	//	char** arr = allPositionBitboardsToMatrix(allPositionBitboards);
+	//	res.set_content(convertToJSArr(arr, 8, 8), "text/plain");
+	//	res.set_header("Access-Control-Allow-Origin", "*");
+	//	delete2DArray(arr, 8);
+	//	});
 	//svr.Get("/eval", [searchRes](const httplib::Request& /*req*/, httplib::Response& res) {
 	//    string eval = to_string(searchRes.eval);
 	//    res.set_content(eval, "text/plain");
@@ -178,7 +167,8 @@ PosAndColor fenToPosBitboards(std::string fen) {
 	for (int i = 0; i < fen.length(); i++) {
 		if (fen[i] == '/') {
 			continue;
-		} else if (fen[i] == ' ') {
+		}
+		else if (fen[i] == ' ') {
 			maxI = i;
 			break;
 		}
@@ -191,13 +181,12 @@ PosAndColor fenToPosBitboards(std::string fen) {
 			int currNum = fen[i] - '0';
 			actualPos += currNum - 1;
 			continue;
-		} else {
+		}
+		else {
 			//Else is useless, looks better though. Shush.
 			int y = actualPos / 8;
 			//Keeps as int therefore rounds down. 
 			int x = actualPos % 8;
-			//cout << pieceToNumber['r'];
-			//Goes to the correct colour
 			//Goes to the Piece type by checking hte Piece to number map
 			//then sets the bit in that pos to one
 			setBitTo(&allPositionBitboards.pieceTypePositions[pieceToNumber[fen[i]]], actualPos, 1);
@@ -208,14 +197,14 @@ PosAndColor fenToPosBitboards(std::string fen) {
 	allPositionBitboards.castlingRights[0].canCastleQSide = false;
 	allPositionBitboards.castlingRights[1].canCastleKSide = false;
 	allPositionBitboards.castlingRights[1].canCastleQSide = false;
-	//cout << "maxI + 1:" << maxI + 1 << endl;
-	//cout << "fen[maxI + 1]:" << fen[maxI + 1] << endl;
+
 	//If no space detected, i.e. maxI=-1, it goes to the default values
 	if (maxI != -1) {
 		if (fen[maxI + 1] == 'b') {
 			//cout << "Black" << endl;
 			res.color = 0;
-		} else {
+		}
+		else {
 			//cout << "White" << endl;
 			res.color = 1;
 		}
@@ -223,7 +212,8 @@ PosAndColor fenToPosBitboards(std::string fen) {
 		if (fen[maxI + 3] == '-') {
 			//cout << "No castling rights" << endl;
 			maxJ = 4;
-		} else {
+		}
+		else {
 			for (int j = 3; j < 7; j++) {
 				char el = fen[maxI + j];
 				if (el == ' ') {
@@ -234,7 +224,8 @@ PosAndColor fenToPosBitboards(std::string fen) {
 				if (tolower(el) == 'k') {
 					//cout << (castleRightsColor ? "White" : "Black") << " can castle king side. " << endl;
 					allPositionBitboards.castlingRights[castleRightsColor].canCastleKSide = true;
-				} else {
+				}
+				else {
 					//cout << (castleRightsColor ? "White" : "Black") << " can castle queen side. " << endl;
 					allPositionBitboards.castlingRights[castleRightsColor].canCastleQSide = true;
 				}
@@ -259,7 +250,8 @@ PosAndColor fenToPosBitboards(std::string fen) {
 			//cout << "!res.color: " << !res.color << endl;
 			allPositionBitboards.pawnWhoDoubleMovedPos = x + (y * 8);
 		}
-	} else {
+	}
+	else {
 		res.color = 1;
 	}
 
@@ -330,8 +322,9 @@ ZobristHash genInitZobristHash(AllCurrPositions currPositions) {
 		for (int pieceType = 0; pieceType < 6; pieceType++) {
 			Bitboard pieceTypeBitboard = currPositions.pieceTypePositions[pieceType + (color * 6)];
 			while (pieceTypeBitboard != 0) {
-				int pos = _tzcnt_u64(currPositions.pieceTypePositions[pieceType + (color * 6)]);
+				int pos = _tzcnt_u64(pieceTypeBitboard);
 				currZobristHash ^= ZobristSeed[color ? pieceType + 6 : pieceType][pos];
+				setBitTo(&pieceTypeBitboard, pos, 0);
 			}
 		}
 		//If it is white it multiplies everything by 4, or shifts it up twice
@@ -388,7 +381,8 @@ string convertToJSArr(char** a, int cols, int rows)
 		}
 		if (i != cols - 1) {
 			s += "],";
-		} else {
+		}
+		else {
 			s += "]";
 		}
 
@@ -413,7 +407,6 @@ string convertVofBBJS(vector<Bitboard> matrixVector) {
 	string jsonString = ss.str();
 	return jsonString;
 }
-
 stringstream convertBBJS(Bitboard curBB) {
 	stringstream ss;
 	ss << "[";
@@ -424,7 +417,8 @@ stringstream convertBBJS(Bitboard curBB) {
 		ss << (getBit(curBB, bit) ? "true" : "false");
 		if (bit % 8 != 7) {
 			ss << ",";
-		} else {
+		}
+		else {
 			ss << "]";
 			if (bit / 8 != 7) {
 				ss << ",";
@@ -434,21 +428,37 @@ stringstream convertBBJS(Bitboard curBB) {
 	ss << "]";
 	return ss;
 }
+string convertVectorOfMovesToJs(vector<MoveDesc> moves) {
+	stringstream ss;
+	ss << "[";
+	int amOfMoves = moves.size();
+	for (int i = 0; i < amOfMoves; ++i) {
+		MoveDesc move = moves[i];
+		ss << convertMoveToJS(move);
+		if (i < amOfMoves - 1) {
+			ss << ", \n";
+		}
+	}
+	ss << "]";
+	string jsonString = ss.str();
+	return jsonString;
+}
 
 MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
 	// Your logic to convert moveStr to a MoveDesc object
 	MoveDesc move;
 	move.pieceMovingColor = (bool)moveStr["pieceMovingColor"];
 	cout << "move.pieceMovingColor: " << move.pieceMovingColor << endl;
-	move.pieceType = moveStr["pieceType"];
-	cout << "move.pieceType: " << move.pieceType << endl;
+	move.pieceType = moveStr["normalizedPieceType"];
+	cout << "move.normalizedPieceType: " << move.pieceType << endl;
 	move.posOfMove = moveStr["posOfMove"];
 	cout << "move.posOfMove: " << move.posOfMove << endl;
 	move.moveOrCapture = (int)moveStr["moveOrCapture"];
 	cout << "move.moveOrCapture :" << move.moveOrCapture << endl;
 	if (moveStr.contains("xFrom")) {
 		move.posFrom = (int)moveStr["xFrom"] + ((int)moveStr["yFrom"] * 8);
-	} else {
+	}
+	else {
 		move.posFrom = moveStr["posFrom"];
 	}
 	cout << "move.posFrom: " << move.posFrom << endl;
@@ -457,7 +467,7 @@ MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
 string convertMoveToJS(MoveDesc move) {
 	string res = "{\"pieceMovingColor\":";
 	res += move.pieceMovingColor ? "true" : "false";
-	res += ", \"pieceType\":";
+	res += ", \"normalizedPieceType\":";
 	res += to_string(move.pieceType);
 	res += ", \"posOfMove\":";
 	res += to_string(move.posOfMove);
@@ -481,7 +491,7 @@ EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, Z
 	while (time(nullptr) < cutOffTime) {
 		cout << "Depth: " << depth << endl;
 
-		transpositionTable = {};
+		//transpositionTable = {};
 		EvalAndBestMove searchResults = minMax(allCurrPositions, color, depth, currZobristHash, cutOffTime);
 
 		//Currently ignores aborted searches

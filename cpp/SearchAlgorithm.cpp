@@ -81,11 +81,11 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 	if (transpositionTablePerft.find(currZobristHash) != transpositionTablePerft.end() && depthCD <= transpositionTablePerft[currZobristHash].depth) {
 		return transpositionTablePerft[currZobristHash].leafNodes;
 	}
-	depthCD--;
 	totPos++;
-	if (depthCD != -1) {
+	if (depthCD != 0) {
 		uint64_t totalOfLeafsCaused = 0;
 		vector<MoveDesc> posMoves = fullMoveGenLoop(color, allCurrPositions, currZobristHash);
+		//cout << "Amount of moves: " << posMoves.size() << endl;
 
 		for (const MoveDesc& move : posMoves) {
 			////If its a pawn, and it is moving and its original x is not the same as the x to where it is moving it is en passant
@@ -97,7 +97,7 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 			ZobristHash localZobristHash = newPositionsAfterMove.applyMove(move, currZobristHash);
 			calcCombinedPos(newPositionsAfterMove);
 
-			totalOfLeafsCaused += perft(newPositionsAfterMove, !color, depthCD, localZobristHash);
+			totalOfLeafsCaused += perft(newPositionsAfterMove, !color, depthCD - 1, localZobristHash);
 		}
 		LeafNodesAndCurrPos ttData;
 		ttData.leafNodes = totalOfLeafsCaused;

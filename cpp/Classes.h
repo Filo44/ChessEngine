@@ -127,7 +127,7 @@ class BitboardAndPieceInfo {
 public:
 	Bitboard checkerBitboard;
 	int pos;
-	char pieceType;
+	int normalizedPieceType;
 };
 
 struct CastlingRights {
@@ -142,12 +142,15 @@ public:
 	Bitboard colorCombinedPosBitboard[2];
 	int pawnWhoDoubleMovedPos = -1;
 	CastlingRights castlingRights[2];
-	int searchPieceType(bool color, int pos) {
+	int searchPieceType(int pos, bool color) {
 		for (int i = color * 6; i < 6 + (color * 6); i++) {
 			if (getBit(pieceTypePositions[i], pos)) {
 				return i;
 			}
 		}
+
+		cout << "I hate breakpoints" << endl;
+		return -1;
 	}
 
 	ZobristHash applyMove(MoveDesc move, ZobristHash currZobristHash) {
