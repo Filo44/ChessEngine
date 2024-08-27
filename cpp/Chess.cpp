@@ -470,6 +470,8 @@ MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
 	cout << "move.moveOrCapture :" << move.moveOrCapture << endl;
 	move.enPassant = (int)moveStr["enPassant"];
 	cout << "move.enPassant :" << move.enPassant << endl;
+	move.promotingToPiece = moveStr["promotingToPiece"];
+	cout << "move.promotingToPiece :" << move.promotingToPiece << endl;
 	if (moveStr.contains("xFrom")) {
 		move.posFrom = (int)moveStr["xFrom"] + ((int)moveStr["yFrom"] * 8);
 	}
@@ -492,6 +494,8 @@ string convertMoveToJS(MoveDesc move) {
 	res += to_string(move.posFrom);
 	res += ", \"enPassant\":";
 	res += to_string(move.enPassant);
+	res += ", \"promotingToPiece\":";
+	res += to_string(move.promotingToPiece);
 	res += "}";
 	return res;
 }

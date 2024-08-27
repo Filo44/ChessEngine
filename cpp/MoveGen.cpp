@@ -40,12 +40,15 @@ MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colo
 	Bitboard pawnMoveBitboard = 0;
 	Bitboard bufferBitboard = 0;
 
-	MovesByPos moves;
+	MovesByPos moves = {};
 	const int yMult = colorToMove ? -1 : 1;
 
 	if (!pseudo) {
+		const Bitboard& lastRank = colorToMove ? cRank[0] : cRank[7];
 		//One square push
-		pawnMoveBitboard = (colorToMove ? (pawnPosBitboard & ~cRank[0]) >> 8 : (pawnPosBitboard & ~cRank[7]) << 8) & ~posCombinedBitboard;
+		pawnMoveBitboard = (colorToMove ? ((pawnPosBitboard & ~lastRank) >> 8) : ((pawnPosBitboard & ~lastRank) << 8)) & ~posCombinedBitboard;
+		moves = bitboardToPromotionMoves(pawnMoveBitboard & lastRank, colorToMove, MOVE, 0, 1 * yMult, moves);
+		pawnMoveBitboard &= ~lastRank;
 		moves = bitboardToMoves(pawnMoveBitboard, colorToMove, pieceType, MOVE, 0, 1 * yMult, moves);
 		//Then it "checks" (AND it with a bitboard of those ranks) whether they are in the 3rd or 6th rank after being moved once,
 		//  thus meaning they were originally in the first rank
@@ -82,14 +85,17 @@ MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colo
 		}
 
 		//To the lower file capture moves:
-		pawnCapBitboard = ((colorToMove ? ((pawnPosBitboard & ~file[0] & ~cRank[0]) >> 8) : ((pawnPosBitboard & ~file[0] & ~cRank[7]) << 8)) >> 1) & oppColorCombinedBitboard;
+		pawnCapBitboard = (((colorToMove ? ((pawnPosBitboard & ~cRank[0]) >> 8) : ((pawnPosBitboard & ~cRank[7]) << 8)) & ~file[0]) >> 1) & oppColorCombinedBitboard;
+		moves = bitboardToPromotionMoves(pawnCapBitboard & lastRank, colorToMove, CAPTURE, -1, 1 * yMult, moves);
+		pawnCapBitboard &= ~lastRank;
 
 		//To the higher file capture moves(Same thing just exclude the 8th/n=7 file and shift one left instead of one right):
-		bufferBitboard = ((colorToMove ? ((pawnPosBitboard & ~file[7] & ~cRank[0]) >> 8) : ((pawnPosBitboard & ~file[7] & ~cRank[7]) << 8)) << 1) & oppColorCombinedBitboard;
-		if (!pseudo) {
-			moves = bitboardToMoves(pawnCapBitboard, colorToMove, pieceType, CAPTURE, -1, 1 * yMult, moves);
-			moves = bitboardToMoves(bufferBitboard, colorToMove, pieceType, CAPTURE, 1, 1 * yMult, moves);
-		}
+		bufferBitboard = (((colorToMove ? ((pawnPosBitboard & ~cRank[0]) >> 8) : ((pawnPosBitboard & ~cRank[7]) << 8)) & ~file[7]) << 1) & oppColorCombinedBitboard;
+		moves = bitboardToPromotionMoves(bufferBitboard & lastRank, colorToMove, CAPTURE, 1, 1 * yMult, moves);
+		bufferBitboard &= ~lastRank;
+
+		moves = bitboardToMoves(pawnCapBitboard, colorToMove, pieceType, CAPTURE, -1, 1 * yMult, moves);
+		moves = bitboardToMoves(bufferBitboard, colorToMove, pieceType, CAPTURE, 1, 1 * yMult, moves);
 		pawnCapBitboard |= bufferBitboard;
 	}
 	else {
@@ -326,6 +332,26 @@ MovesByPos bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceTy
 		move.posOfMove = _tzcnt_u64(bitboard);
 		moves[move.posFrom].push_back(move);
 		setBitTo(&bitboard, move.posOfMove, 0);
+	}
+	return moves;
+}
+MovesByPos bitboardToPromotionMoves(Bitboard bitboard, bool pieceMovingColor, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos moves) {
+	if (bitboard != 0) {
+		MoveDesc templateMove;
+		templateMove.pieceMovingColor = pieceMovingColor;
+		templateMove.pieceType = pieceMovingColor ? whitePawn : blackPawn;
+		templateMove.moveOrCapture = moveOrCapture;
+		while (bitboard != 0) {
+			MoveDesc move = templateMove;
+			move.posOfMove = _tzcnt_u64(bitboard);
+			move.posFrom = move.posOfMove - (dXApplied + (dYApplied * 8));
+			//pieceTypePromotingTo < (4 + (pieceMovingColor * 6)) and not .... < 6+... because it can't promote to a pawn or a king. :/ 
+			for (int pieceTypePromotingTo = pieceMovingColor * 6; pieceTypePromotingTo < (4 + (pieceMovingColor * 6)); pieceTypePromotingTo++) {
+				move.promotingToPiece = pieceTypePromotingTo;
+				moves[move.posFrom].push_back(move);
+			}
+			setBitTo(&bitboard, move.posOfMove, 0);
+		}
 	}
 	return moves;
 }
@@ -662,5 +688,4 @@ vector<Bitboard> arrayToVector(array<Bitboard, 2> arr) {
 	for (int i = 0; i < 2; i++) {
 		v.push_back(arr[i]);
 	}
-	return v;
-}
+	retu
