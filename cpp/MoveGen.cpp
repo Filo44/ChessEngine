@@ -688,4 +688,5 @@ vector<Bitboard> arrayToVector(array<Bitboard, 2> arr) {
 	for (int i = 0; i < 2; i++) {
 		v.push_back(arr[i]);
 	}
-	retu
+	return v;
+}
