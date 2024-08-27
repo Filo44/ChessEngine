@@ -42,6 +42,8 @@ public:
 	int posFrom;
 	int posOfMove;
 	bool moveOrCapture;
+	int promotingToPiece = -1;
+	bool enPassant = false;
 	bool nullMove = false;
 };
 
@@ -168,13 +170,12 @@ public:
 		bool color = move.pieceMovingColor;
 		bool moveOrCapture = move.moveOrCapture;
 		int posFrom = move.posFrom;
+		int normalizedPieceType = move.pieceType > 5 ? move.pieceType - 6 : move.pieceType;
 
 		int forwards = (color) ? -1 : 1;
 
 		int posFromX = posFrom % 8;
 		int posFromY = posFrom / 8;
-
-		bool enPassantThroughCapture = false;
 
 		//Checks if a pawn has moved two squares, thus opening it up to en passant
 		if (move.pieceType == (color ? whitePawn : blackPawn)) {
@@ -183,14 +184,6 @@ public:
 				//cout << "Added(XORed) the number for file: " << moveToX << endl;
 				//amOfEnPassantXORAdds++;
 				currZobristHash ^= EnPassantFileSeed[moveToX];
-			}
-			//If it is a capture en passant you should move it one forwards
-			else if (posFromY == moveToY) {
-				//Can't just add forwards to moveToY because it removes the Piece using moveToY
-				//Thus I have to make it when it is a en passant through capture move it adds forward to the Y component of where it adds the Piece
-				enPassantThroughCapture = true;
-				//cout << "Capture en passant sdfsfsd" << endl;
-
 			}
 		}
 		else if (move.pieceType == (color ? whiteKing : blackKing)) {
@@ -268,19 +261,10 @@ public:
 		setBitTo(&thisPieceTypeBitboard, posFromX, posFromY, 0);
 		currZobristHash ^= ZobristSeed[color ? move.pieceType + 6 : move.pieceType][posFrom];
 
-		//Puts the Piece in its new location
-		setBitTo(&thisPieceTypeBitboard, moveToX, moveToY + (enPassantThroughCapture ? forwards : 0), 1);
+		//Puts the Piece in its new location. If it is en passant(Now using cap and pos of the piece capturing):
+		//Move the moveTo forwards in the y axis.
+		setBitTo(&thisPieceTypeBitboard, moveToX, moveToY + (move.enPassant ? forwards : 0), 1);
 		currZobristHash ^= ZobristSeed[color ? move.pieceType + 6 : move.pieceType][move.posOfMove];
-
-		//There are two ways of doing an en passant move, the move and the capture.
-		//The following statements check whether it was a move en passant and change it to a takes en passent
-		//Which the capture check will take
-		if (move.pieceType == pieceToNumber['p'] && !moveOrCapture && moveToX != posFromX) {
-			//cout << "Move en passant" << endl;
-			moveOrCapture = CAPTURE;
-			//Because if it is a move en passant you want to remove the Piece that is one square behind it.
-			moveToY -= forwards;
-		}
 
 		//Removes Piece there
 		if (moveOrCapture == CAPTURE) {

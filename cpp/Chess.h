@@ -56,7 +56,7 @@ class BitboardAndPieceInfo;
 
 // char** fenToMatrix(std::string fen);
 void delete2DArray(char** arr, int rows);
-string convertToString(char** arr, int cols, int rows);
+string convertToString(char** a, int cols, int rows);
 string convertToJSArr(char** arr, int cols, int rows);
 string convertVofBBJS(vector<Bitboard> matrixVector);
 stringstream convertBBJS(Bitboard curBB);

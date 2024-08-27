@@ -77,21 +77,14 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 }
 
 int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash) {
-
-	if (transpositionTablePerft.find(currZobristHash) != transpositionTablePerft.end() && depthCD <= transpositionTablePerft[currZobristHash].depth) {
+	if (transpositionTablePerft.find(currZobristHash) != transpositionTablePerft.end() && depthCD == transpositionTablePerft[currZobristHash].depth) {
 		return transpositionTablePerft[currZobristHash].leafNodes;
 	}
-	totPos++;
 	if (depthCD != 0) {
 		uint64_t totalOfLeafsCaused = 0;
 		vector<MoveDesc> posMoves = fullMoveGenLoop(color, allCurrPositions, currZobristHash);
-		//cout << "Amount of moves: " << posMoves.size() << endl;
 
 		for (const MoveDesc& move : posMoves) {
-			////If its a pawn, and it is moving and its original x is not the same as the x to where it is moving it is en passant
-			//if (i == pieceToNumber['p'] && moveOrCapture == 0 && (_tzcnt_u64(colorCurrPositions.pieceTypes[i].positionBitboard[j]) % 8) != (posOfNextBit % 8)) {
-			//	enPassant++;
-			//}
 
 			AllCurrPositions newPositionsAfterMove = allCurrPositions;
 			ZobristHash localZobristHash = newPositionsAfterMove.applyMove(move, currZobristHash);

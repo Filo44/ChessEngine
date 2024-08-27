@@ -7,11 +7,11 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-	int depth = 5;
+	int depth = 1;
 	int port = 8080;
-	bool color = false;
+	bool color;
 	//string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
-	string lFen = "8/3p4/8/4P3/8/1K4k1/8/8 b - -";
+	string lFen = "rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R w KQ -";
 	if (argc > 1) {
 		depth = stoi(argv[1]);
 		if (argc > 2) {
@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 
 	PosAndColor gameState = fenToPosBitboards(lFen);
 	AllCurrPositions allPositionBitboards = gameState.allCurrPositions;
-	//bool color = gameState.color;
+	color = gameState.color; //REMOVE THIS FOR THE ONE TO ONE FOR THE CHESS ENGINES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	cout << "Calculated gamestate" << endl;
 	//cout << "Board: " << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
 
@@ -41,22 +41,23 @@ int main(int argc, char* argv[]) {
 	cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
 	cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
 
-	MoveDesc move;
-	move.pieceMovingColor = BLACK;
-	move.moveOrCapture = MOVE;
-	move.pieceType = blackPawn;
-	move.posOfMove = 27;
-	move.posFrom = 11;
+	//MoveDesc move;
+	//move.pieceMovingColor = BLACK;
+	//move.moveOrCapture = MOVE;
+	//move.pieceType = blackPawn;
+	//move.posOfMove = 26;
+	//move.posFrom = 10;
 
-	currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
-	posMoves = fullMoveGenLoop(!color, allPositionBitboards, currZobristHash);
-	cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
-	cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
+	//currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
+	//posMoves = fullMoveGenLoop(!color, allPositionBitboards, currZobristHash);
+	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
+	//cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
 
-	currZobristHash = allPositionBitboards.applyMove(posMoves[8], currZobristHash);
-	posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
-	cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
-	cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
+	//currZobristHash = allPositionBitboards.applyMove(posMoves[7], currZobristHash);
+	//posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
+	//cout << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
+	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
+	//cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
 
 	//amountOfLeafNodes = 0;
 	//captures = 0;
@@ -74,10 +75,10 @@ int main(int argc, char* argv[]) {
 	//cout << "hypos: " << hypos << endl;
 	//return actualAmountOfLeafNodes;
 
-	//transpositionTable = {};
-	/*EvalAndBestMove res = minMax(allPositionBitboards, color, depth, currZobristHash);
+	/*transpositionTable = {};
+	EvalAndBestMove res = minMax(allPositionBitboards, color, depth, currZobristHash);
 	cout << "Eval " << res.eval << endl;
-	cout << "Hi" << endl;*/
+	cout << "Hi" << endl; */
 
 
 	//Fixes CORS errors
@@ -286,6 +287,7 @@ char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL) {
 
 			//y, x for arrays
 			arr[pos / 8][pos % 8] = pieces[pieceType];
+			setBitTo(&currCheckingBitboard, pos, 0);
 		}
 	}
 	return arr;
@@ -374,6 +376,7 @@ string convertToString(char** a, int cols, int rows)
 			s = s + a[i][j];
 		}
 	}
+	delete2DArray(a, 8);
 	return s;
 }
 string convertToJSArr(char** a, int cols, int rows)
@@ -465,6 +468,8 @@ MoveDesc parseMove(const json moveStr, AllCurrPositions allCurrPositions) {
 	cout << "move.posOfMove: " << move.posOfMove << endl;
 	move.moveOrCapture = (int)moveStr["moveOrCapture"];
 	cout << "move.moveOrCapture :" << move.moveOrCapture << endl;
+	move.enPassant = (int)moveStr["enPassant"];
+	cout << "move.enPassant :" << move.enPassant << endl;
 	if (moveStr.contains("xFrom")) {
 		move.posFrom = (int)moveStr["xFrom"] + ((int)moveStr["yFrom"] * 8);
 	}
@@ -485,6 +490,8 @@ string convertMoveToJS(MoveDesc move) {
 	res += to_string(move.moveOrCapture);
 	res += ", \"posFrom\":";
 	res += to_string(move.posFrom);
+	res += ", \"enPassant\":";
+	res += to_string(move.enPassant);
 	res += "}";
 	return res;
 }

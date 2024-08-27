@@ -64,21 +64,19 @@ MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colo
 
 
 		if (enPassantCapBitboard != 0) {
-			Bitboard enPassantMoveBitboard = colorToMove ? (enPassantCapBitboard >> 8) : (enPassantCapBitboard << 8);
-			int posOfEnPassantMove = _tzcnt_u64(enPassantMoveBitboard);
+			//Bitboard enPassantMoveBitboard = colorToMove ? (enPassantCapBitboard >> 8) : (enPassantCapBitboard << 8);
+			int posOfEnPassantMove = _tzcnt_u64(enPassantCapBitboard);
 
 			MoveDesc enPassantMove;
 			enPassantMove.pieceMovingColor = colorToMove;
-			enPassantMove.moveOrCapture = MOVE;
+			enPassantMove.moveOrCapture = CAPTURE;
+			enPassantMove.enPassant = true;
 			enPassantMove.pieceType = colorToMove ? whitePawn : blackPawn;
 			enPassantMove.posFrom = _tzcnt_u64(higherFileEnPassantCapBitboard != 0 ? enPassantCapBitboard >> 1 : enPassantCapBitboard << 1);
 			enPassantMove.posOfMove = posOfEnPassantMove;
 
 			if (!goesIntoCheck(allCurrPositions, enPassantMove, colorToMove)) {
 				//Adding the enPassant moves to the bitboards
-				pawnMoveBitboard |= enPassantMoveBitboard;
-				pawnCapBitboard |= enPassantCapBitboard;
-
 				moves[enPassantMove.posFrom].push_back(enPassantMove);
 			}
 		}
@@ -212,6 +210,28 @@ MoveAndCapBitboards genPseudoKingBitboard(AllCurrPositions allCurrPositions, boo
 	}
 
 	return { kingMoveBitboard, kingCapBitboard };
+}
+Bitboard genCastlingMoves(AllCurrPositions allCurrPositions, bool colorToMove, const Bitboard& kingPosBitboard, Bitboard oppAttacking) {
+	Bitboard& allPosCombined = allCurrPositions.allPiecesCombBitboard;
+	Bitboard res = 0;
+	//Pseudo, although not passed as a parameter, is known to be false
+	if (allCurrPositions.castlingRights[colorToMove].canCastleQSide) {
+		//This means that the king and the queen-side rook haven't been moved.
+		if ((castlingRays[colorToMove][QUEENSIDE] & allPosCombined) == 0 && (castlingRays[colorToMove][QUEENSIDE] & oppAttacking) == 0) {
+			//If either the castling ray and a piece overlap or the castling ray and the oppAttacking bitboard overlap it means you can't castle.
+			//Shifts are inverted, i.e. shift right 2 means it moves the bits in the bitboard left 2.
+			res = kingPosBitboard >> 2;
+		}
+	}
+	if (allCurrPositions.castlingRights[colorToMove].canCastleKSide) {
+		//This means that the king and the king-side rook haven't been moved.
+		if ((castlingRays[colorToMove][KINGSIDE] & allPosCombined) == 0 && (castlingRays[colorToMove][KINGSIDE] & oppAttacking) == 0) {
+			//If either the castling ray and a piece overlap or the castling ray and the oppAttacking bitboard overlap it means you can't castle.
+			//Shifts are inverted, i.e. shift left 2 means it moves the bits in the bitboard right 2.
+			res |= kingPosBitboard << 2;
+		}
+	}
+	return { res };
 }
 MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, const DirectionBitboards(&PreCalculatedRays)[8][8], int pieceType, MovesByPos moves, int oppKingPos) {
 	Bitboard slidingPiecePosBitboard = allCurrPositions.pieceTypePositions[pieceType];
@@ -378,7 +398,6 @@ vector<MoveDesc> fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrPosi
 
 	CheckData checkChecksRes = checkChecks(allCurrPositions, colorToMove);
 	int numOfCheck = checkChecksRes.numOfChecks;
-	cout << "numOfCheck: " << numOfCheck << endl;
 	vector<BitboardAndPieceInfo> checkerLocations = checkChecksRes.checkerLocations;
 
 	vector<MoveDesc> posMoves = {};
@@ -390,7 +409,10 @@ vector<MoveDesc> fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrPosi
 	//King Moves:
 	MoveAndCapBitboards pseudoLegalKingMoves = genPseudoKingBitboard(allCurrPositions, colorToMove, kingPosBB, false);
 
+	//legalKingMoves removes king moves into attacked squares
 	MoveAndCapBitboards legalKingMoves = genKingLegalMoves(pseudoLegalKingMoves.capBitboard, pseudoLegalKingMoves.moveBitboard, oppAttacking);
+
+	legalKingMoves.moveBitboard |= genCastlingMoves(allCurrPositions, colorToMove, kingPosBB, oppAttacking);
 	posMoves = addVectors(bitboardToMoveVector(legalKingMoves.moveBitboard, colorToMove, colorToMove ? whiteKing : blackKing, MOVE, kingPos), posMoves);
 	posMoves = addVectors(bitboardToMoveVector(legalKingMoves.capBitboard, colorToMove, colorToMove ? whiteKing : blackKing, CAPTURE, kingPos), posMoves);
 
@@ -402,7 +424,6 @@ AttackingAndPinnedBBs genAttackingAndPinned(AllCurrPositions allCurrPositions, b
 	MoveCapAndMoveDescs results;
 	MoveAndCapBitboards onlyBitboardsResults;
 	MoveCapPinnedAndMoves slidingResults;
-	cout << "King bitboard: " << (bitset<64>)allCurrPositions.pieceTypePositions[whiteKing] << endl;
 
 	results = genPawnBitboard(allCurrPositions, !colorToMove, true);
 	currAttackingBitboard |= results.moveBitboard;
@@ -452,10 +473,6 @@ vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinned
 	MovesByPos moves;
 
 	if (numOfCheck == 1) {
-		cout << "First conditional statement" << endl;
-		cout << "checkerLocations.size(): " << checkerLocations.size() << endl;
-		cout << "checkerLocations[0].normalizedPieceType: " << checkerLocations[0].normalizedPieceType << endl;
-		cout << "checkerLocations[0].pos: " << checkerLocations[0].pos << endl;
 		if (checkerLocations[0].normalizedPieceType == queen || checkerLocations[0].normalizedPieceType == bishop || checkerLocations[0].normalizedPieceType == rook) {
 			//Generate the checker to king bitboard
 
@@ -476,7 +493,6 @@ vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinned
 
 			int squareDist = max(xDist, yDist);
 			array<Bitboard, 2> checkerToKingBBs = pieceToPieceBitboard({ xInc, yInc, squareDist }, kingPos % 8, kingPos / 8);
-			cout << "Checker to king move bitboard: " << (bitset<64>)checkerToKingBBs[0] << endl;
 			checkerToKingBBMove = checkerToKingBBs[0];
 			checkerToKingBBCapture = checkerToKingBBs[1];
 		}
