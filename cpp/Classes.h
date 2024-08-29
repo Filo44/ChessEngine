@@ -274,7 +274,7 @@ public:
 						castlingRights[!color].canCastleQSide = false;
 					}
 					if (moveToX == 7) {
-						castlingRights[!color].canCastleQSide = false;
+						castlingRights[!color].canCastleKSide = false;
 					}
 				}
 			}

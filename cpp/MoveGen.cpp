@@ -270,6 +270,7 @@ MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool
 
 				Bitboard posOppKingBlockers = kingOppRay & posCombinedBitboard;
 				//Change this to get the first blocker by manipulating(Rotating) the bitboard such that the least sig bit is the first blocker
+				Bitboard actualKingOppRay = kingOppRay;
 				while (posOppKingBlockers != 0) {
 					int posOfBlocker = _tzcnt_u64(posOppKingBlockers);
 					kingOppRay &= ~PreCalculatedRays[posOfBlocker % 8][posOfBlocker / 8][(dir + 2) % 4];
@@ -292,7 +293,7 @@ MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool
 					//Capture mask is just this piece(I.e. the sliding piece) 
 					// and the push mask is the kingOppRay AND the inverse of the ray from the sliding piece in the same dir as the king(I.e. the opposite dir of the one we checked for moves)
 					newPinnedPiece.captureMask = 1ULL << pos;
-					newPinnedPiece.pushMask = (kingOppRay & ~PreCalculatedRays[pos % 8][pos / 8][(dir + 2) % 4] & ~newPinnedPiece.captureMask);
+					newPinnedPiece.pushMask = (actualKingOppRay & ~PreCalculatedRays[pos % 8][pos / 8][(dir + 2) % 4] & ~newPinnedPiece.captureMask);
 					pinnedPieces.push_back(newPinnedPiece);
 				}
 			}
@@ -447,12 +448,15 @@ vector<MoveDesc> fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrPosi
 	//legalKingMoves removes king moves into attacked squares
 	MoveAndCapBitboards legalKingMoves = genKingLegalMoves(pseudoLegalKingMoves.capBitboard, pseudoLegalKingMoves.moveBitboard, oppAttacking);
 
-	legalKingMoves.moveBitboard |= genCastlingMoves(allCurrPositions, colorToMove, kingPosBB, oppAttacking);
+	if (numOfCheck == 0) {
+		legalKingMoves.moveBitboard |= genCastlingMoves(allCurrPositions, colorToMove, kingPosBB, oppAttacking);
+	}
 	posMoves = addVectors(bitboardToMoveVector(legalKingMoves.moveBitboard, colorToMove, colorToMove ? whiteKing : blackKing, MOVE, kingPos), posMoves);
 	posMoves = addVectors(bitboardToMoveVector(legalKingMoves.capBitboard, colorToMove, colorToMove ? whiteKing : blackKing, CAPTURE, kingPos), posMoves);
 
 	return posMoves;
 }
+
 AttackingAndPinnedBBs genAttackingAndPinned(AllCurrPositions allCurrPositions, bool colorToMove, int kingPos) {
 	vector<PinnedPieceData> pinnedPieces = {};
 	Bitboard currAttackingBitboard = 0;
@@ -498,7 +502,6 @@ AttackingAndPinnedBBs genAttackingAndPinned(AllCurrPositions allCurrPositions, b
 	res.attacking = currAttackingBitboard;
 	return res;
 }
-
 vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool colorToMove, CheckData checkData, int kingPos) {
 	vector<MoveDesc> movesVector;
 
@@ -506,30 +509,72 @@ vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinned
 	Bitboard checkerToKingBBMove = ~((Bitboard)0);
 	Bitboard checkerToKingBBCapture = ~((Bitboard)0);
 	MovesByPos moves;
-
 	if (numOfCheck == 1) {
 		if (checkerLocations[0].normalizedPieceType == queen || checkerLocations[0].normalizedPieceType == bishop || checkerLocations[0].normalizedPieceType == rook) {
 			//Generate the checker to king bitboard
 
 			//It uses the first checker as if there are more than one, it wont use these variables
 			int& firstCheckerPos = checkerLocations[0].pos;
-
-			//Distances must be ints so I can do the max,min limiting.
 			int firstCheckerX = firstCheckerPos % 8;
 			int firstCheckerY = firstCheckerPos / 8;
-			//cout << "First checker x: " << firstCheckerX << ", y:" << firstCheckerY << endl;
+
 			int xDist = firstCheckerX - (kingPos % 8);
 			int xInc = min(max(xDist, -1), 1);
-			//cout << "Xinc: " << xInc << endl;
 
 			int yDist = firstCheckerY - (kingPos / 8);
 			int yInc = min(max(yDist, -1), 1);
-			//cout << "Yinc: " << yInc << endl;
 
-			int squareDist = max(xDist, yDist);
-			array<Bitboard, 2> checkerToKingBBs = pieceToPieceBitboard({ xInc, yInc, squareDist }, kingPos % 8, kingPos / 8);
-			checkerToKingBBMove = checkerToKingBBs[0];
-			checkerToKingBBCapture = checkerToKingBBs[1];
+			checkerToKingBBMove = 0;
+			checkerToKingBBCapture = 1ULL << firstCheckerPos;
+
+			//DON'T MAKE IT A REFERENCE!
+			int normalizedPieceType = checkerLocations[0].normalizedPieceType;
+			if (checkerLocations[0].normalizedPieceType == queen) {
+				if (xInc == 0 || yInc == 0) {
+					//Means it is horizontal, thus treat it like a rook
+					normalizedPieceType = rook;
+				}
+				else {
+					normalizedPieceType = bishop;
+				}
+			}
+			int dir;
+			if (normalizedPieceType == rook) {
+				if (yInc == -1 && xInc == 0) {
+					dir = 0;
+				}
+				else if (yInc == 0 && xInc == 1) {
+					dir = 1;
+				}
+				else if (yInc == 1 && xInc == 0) {
+					dir = 2;
+				}
+				else if (yInc == 0 && xInc == -1) {
+					dir = 3;
+				}
+				const Bitboard& kingRay = PreCalculatedHorizontalRays[kingPos % 8][kingPos / 8][dir];
+				const Bitboard& checkerRay = PreCalculatedHorizontalRays[firstCheckerX][firstCheckerY][dir];
+
+				checkerToKingBBMove = (kingRay & ~checkerRay & ~checkerToKingBBCapture);
+			}
+			else if (normalizedPieceType == bishop) {
+				if (yInc == -1 && xInc == 1) {
+					dir = 0;
+				}
+				else if (yInc == 1 && xInc == 1) {
+					dir = 1;
+				}
+				else if (yInc == 1 && xInc == -1) {
+					dir = 2;
+				}
+				else if (yInc == -1 && xInc == -1) {
+					dir = 3;
+				}
+				const Bitboard& kingRay = PreCalculatedDiagonalRays[kingPos % 8][kingPos / 8][dir];
+				const Bitboard& checkerRay = PreCalculatedDiagonalRays[firstCheckerX][firstCheckerY][dir];
+
+				checkerToKingBBMove |= (kingRay & ~checkerRay & ~checkerToKingBBCapture);
+			}
 		}
 		else {
 			//If it isn't a sliding Piece the Piece that is checking them, you can't block it

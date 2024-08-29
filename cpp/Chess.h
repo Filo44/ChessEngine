@@ -35,7 +35,9 @@ enum PieceWithoutColor {
 
 using namespace std;
 using Bitboard = uint64_t;
+using MoveMag = array<int, 3>;
 using ZobristHash = uint64_t;
+using DirectionBitboards = array<Bitboard, 4>;
 
 class MoveDesc;
 class PieceTypeCurrPositions;
@@ -53,6 +55,8 @@ class LeafNodesAndCurrPos;
 class PosAndColor;
 class EvalAndBestMove;
 class BitboardAndPieceInfo;
+
+using MovesByPos = array<vector<MoveDesc>, 64>;
 
 // char** fenToMatrix(std::string fen);
 void delete2DArray(char** arr, int rows);
@@ -72,6 +76,7 @@ char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
 MoveDesc parseMove(json moveStr, AllCurrPositions allCurrPositions);
 string convertVectorOfMovesToJs(vector<MoveDesc> moves);
 double timeManagementFunction(double timeRemaining);
+string convertMovesByPosToUCIMoves(MovesByPos moves);
 
 string squareToUCI(int pos);
 string moveToUCI(const MoveDesc& move);

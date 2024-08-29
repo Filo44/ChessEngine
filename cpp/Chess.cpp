@@ -10,14 +10,10 @@ int main(int argc, char* argv[]) {
 	int depth = 1;
 	int port = 8080;
 	bool color;
-	////Remove after
-	//int moveToApplyIndex = 0;
 
-	string lFen = "5k2/5p2/8/8/8/8/5n2/4KR2 b - - 2 8";
+	string lFen = "rnbq1k1r/pp1P1ppp/2p5/8/1bB5/8/PPPBNnPP/RN1QK2R w KQ - 3 9";
 	if (argc > 1) {
 		depth = stoi(argv[1]);
-		////Remove after
-		//moveToApplyIndex = stoi(argv[1]);
 		if (argc > 2) {
 			lFen = argv[2];
 			cout << "FEN: " << lFen << endl;
@@ -536,8 +532,6 @@ EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, Z
 	}
 	return res;
 }
-
-
 EvalAndBestMove getMoveAndApplyFromPos(AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash, double timeLeft, bool color) {
 	double timeAssigned = timeManagementFunction(timeLeft);
 	EvalAndBestMove resultOfMinMaxSearch = iterativeSearch(allPositionBitboards, color, currZobristHash, timeAssigned);
@@ -574,4 +568,16 @@ string moveToUCI(const MoveDesc& move) {
 		uciMove += promotionChar;
 	}
 	return uciMove;
+}
+
+string convertMovesByPosToUCIMoves(MovesByPos moves) {
+	vector<MoveDesc> movesVector;
+	stringstream ss;
+	for (int i = 0; i < 64; i++) {
+		movesVector = addVectors(moves[i], movesVector);
+	}
+	for (MoveDesc move : movesVector) {
+		ss << moveToUCI(move) << "\n";
+	}
+	return ss.str();
 }
