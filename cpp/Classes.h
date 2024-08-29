@@ -4,17 +4,6 @@
 #include "ZobristSeed.h"
 #include <bitset>
 
-extern int amountOfLeafNodes;
-extern int captures;
-extern int enPassant;
-extern int totPos;
-//extern int amOfEnPassantXORAdds;
-//extern int amOfEnPassantXORRemovals;
-extern int hypos;
-extern unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTablePerft;
-extern unordered_map<ZobristHash, EvalAndBestMove> transpositionTable;
-
-
 constexpr auto CAPTURE = 1;
 constexpr auto MOVE = 0;
 
@@ -259,18 +248,36 @@ public:
 
 		//Removes Piece in its initial location
 		setBitTo(&thisPieceTypeBitboard, posFromX, posFromY, 0);
-		currZobristHash ^= ZobristSeed[color ? move.pieceType + 6 : move.pieceType][posFrom];
+		currZobristHash ^= ZobristSeed[move.pieceType][posFrom];
 
-		//Puts the Piece in its new location. If it is en passant(Now using cap and pos of the piece capturing):
-		//Move the moveTo forwards in the y axis.
-		setBitTo(&thisPieceTypeBitboard, moveToX, moveToY + (move.enPassant ? forwards : 0), 1);
-		currZobristHash ^= ZobristSeed[color ? move.pieceType + 6 : move.pieceType][move.posOfMove];
+		if (move.promotingToPiece == -1) {
+			//Puts the Piece in its new location. If it is en passant(Now using cap and pos of the piece capturing):
+			//Move the moveTo forwards in the y axis.
+			setBitTo(&thisPieceTypeBitboard, moveToX, moveToY + (move.enPassant ? forwards : 0), 1);
+			currZobristHash ^= ZobristSeed[move.pieceType][move.posOfMove + (move.enPassant ? forwards * 8 : 0)];
+		}
+		else {
+			//Promotion, can't be en passant. move.promotingToPiece has color info.
+			setBitTo(&pieceTypePositions[move.promotingToPiece], moveToX, moveToY, 1);
+			currZobristHash ^= ZobristSeed[move.promotingToPiece][move.posOfMove];
+		}
 
 		//Removes Piece there
 		if (moveOrCapture == CAPTURE) {
 
 			//(moveToX + (moveToY*8))!=move.posOfMove OK?! BECAUSE IF IT EN PASSANT I ONLY CHANGE THE MOVETOY
 			int toCapturePieceType = searchPieceType(moveToX + (moveToY * 8), !color);
+			int oppRookStartingRank = !color ? 7 : 0;
+			if (toCapturePieceType == blackRook || toCapturePieceType == whiteRook) {
+				if (moveToY == oppRookStartingRank) {
+					if (moveToX == 0) {
+						castlingRights[!color].canCastleQSide = false;
+					}
+					if (moveToX == 7) {
+						castlingRights[!color].canCastleQSide = false;
+					}
+				}
+			}
 
 			setBitTo(&pieceTypePositions[toCapturePieceType], moveToX + (moveToY * 8), 0);
 			currZobristHash ^= ZobristSeed[toCapturePieceType][moveToX + (moveToY * 8)];
@@ -300,10 +307,6 @@ class LeafNodesAndCurrPos {
 public:
 	int leafNodes;
 	int depth;
-	//LeafNodesAndCurrPos(int leafNodesIn, char** allPositionMatrixIn) { // Constructor with parameters
-	//	leafNodes = leafNodesIn;
-	//	allPositionMatrix = allPositionMatrixIn;
-	//}
 };
 
 class PosAndColor {

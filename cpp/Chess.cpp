@@ -10,12 +10,17 @@ int main(int argc, char* argv[]) {
 	int depth = 1;
 	int port = 8080;
 	bool color;
-	//string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
-	string lFen = "rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R w KQ -";
+	////Remove after
+	//int moveToApplyIndex = 0;
+
+	string lFen = "5k2/5p2/8/8/8/8/5n2/4KR2 b - - 2 8";
 	if (argc > 1) {
 		depth = stoi(argv[1]);
+		////Remove after
+		//moveToApplyIndex = stoi(argv[1]);
 		if (argc > 2) {
 			lFen = argv[2];
+			cout << "FEN: " << lFen << endl;
 			if (argc > 3) {
 				port = stoi(argv[3]);
 				if (argc > 4) {
@@ -37,9 +42,9 @@ int main(int argc, char* argv[]) {
 
 	ZobristHash currZobristHash = genInitZobristHash(allPositionBitboards);
 	cout << "Calculated the zobrist hash" << endl;
-	vector<MoveDesc> posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
-	cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
-	cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
+	//vector<MoveDesc> posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
+	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
+	//cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
 
 	//MoveDesc move;
 	//move.pieceMovingColor = BLACK;
@@ -48,32 +53,29 @@ int main(int argc, char* argv[]) {
 	//move.posOfMove = 26;
 	//move.posFrom = 10;
 
-	//currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
+	//currZobristHash = allPositionBitboards.applyMove(posMoves[moveToApplyIndex], currZobristHash);
 	//posMoves = fullMoveGenLoop(!color, allPositionBitboards, currZobristHash);
-	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
-	//cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
+	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;;
+	//cout << "CurrPos: " << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
 
-	//currZobristHash = allPositionBitboards.applyMove(posMoves[7], currZobristHash);
-	//posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
-	//cout << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
-	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
-	//cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
-
-	//amountOfLeafNodes = 0;
-	//captures = 0;
-	//enPassant = 0;
-	//totPos = 0;
-	//hypos = 0;
-	//transpositionTablePerft = {};
-	////transpositionTable = {};
-	//cout << "Starting the perft search " << endl;
-	//uint64_t actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash);
-	//cout << "actualAmountOfLeafNodes: " << actualAmountOfLeafNodes << endl;
-	//cout << "enPassant: " << enPassant << endl;
-	//cout << "captures: " << captures << endl;
-	//cout << "totPos: " << totPos << endl;
-	//cout << "hypos: " << hypos << endl;
-	//return actualAmountOfLeafNodes;
+	amountOfLeafNodes = 0;
+	captures = 0;
+	enPassant = 0;
+	totPos = 0;
+	transpositionTablePerft = {};
+	movesAndLeafNodes = {};
+	//transpositionTable = {};
+	cout << "Starting the perft search " << endl;
+	uint64_t actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash, depth);
+	cout << "actualAmountOfLeafNodes: " << actualAmountOfLeafNodes << endl;
+	cout << "enPassant: " << enPassant << endl;
+	cout << "captures: " << captures << endl;
+	cout << "totPos: " << totPos << endl;
+	for (string moveAndLeafNode : movesAndLeafNodes) {
+		cout << moveAndLeafNode << endl;
+	}
+	cout << "FINISHED" << endl;
+	return actualAmountOfLeafNodes;
 
 	/*transpositionTable = {};
 	EvalAndBestMove res = minMax(allPositionBitboards, color, depth, currZobristHash);
@@ -369,13 +371,21 @@ void delete2DArray(char** arr, int rows) {
 }
 string convertToString(char** a, int cols, int rows)
 {
-	string s = "";
+	string s = "\n - - - - - - - - - - - - \n - - - - - - - - - - - -";
 	for (int i = 0; i < cols; i++) {
-		s = s + "\n";
+		s += "\n - - ";
 		for (int j = 0; j < rows; j++) {
-			s = s + a[i][j];
+			if (a[i][j] != ' ') {
+				s += a[i][j];
+				s += ' ';
+			}
+			else {
+				s += ". ";
+			}
 		}
+		s += "- -";
 	}
+	s += "\n - - - - - - - - - - - - \n - - - - - - - - - - - -";
 	delete2DArray(a, 8);
 	return s;
 }
@@ -547,4 +557,21 @@ string posAndGameStateToJS(AllCurrPositions allPositionBitboards, EvalAndBestMov
 		+ "}";
 	cout << "Responding: " << res;
 	return res;
+}
+// Helper function to convert 0-63 index to UCI square notation
+string squareToUCI(int pos) {
+	char file = 'a' + (pos % 8);  // Calculate the file ('a' to 'h')
+	char rank = '1' + (7 - (pos / 8));  // Calculate the rank ('1' to '8')
+	return string(1, file) + string(1, rank);
+}
+// Function to convert MoveDesc to UCI move format
+string moveToUCI(const MoveDesc& move) {
+	string uciMove = squareToUCI(move.posFrom) + squareToUCI(move.posOfMove);
+
+	// Check if the move is a promotion
+	if (move.promotingToPiece != -1) {
+		char promotionChar = pieces[move.promotingToPiece];
+		uciMove += promotionChar;
+	}
+	return uciMove;
 }

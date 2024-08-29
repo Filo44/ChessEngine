@@ -8,6 +8,7 @@ int totPos = 0;
 int hypos = 0;
 unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTablePerft = {};
 unordered_map<ZobristHash, EvalAndBestMove> transpositionTable = {};
+vector<string> movesAndLeafNodes = {};
 
 
 EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, double cutOffTime) {
@@ -76,7 +77,7 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 	}
 }
 
-int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash) {
+int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, int initDepth) {
 	if (transpositionTablePerft.find(currZobristHash) != transpositionTablePerft.end() && depthCD == transpositionTablePerft[currZobristHash].depth) {
 		return transpositionTablePerft[currZobristHash].leafNodes;
 	}
@@ -90,8 +91,16 @@ int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHas
 			ZobristHash localZobristHash = newPositionsAfterMove.applyMove(move, currZobristHash);
 			calcCombinedPos(newPositionsAfterMove);
 
-			totalOfLeafsCaused += perft(newPositionsAfterMove, !color, depthCD - 1, localZobristHash);
+			//REMOVE AFTER(Remove the buffer)
+			int bufferLeafsCaused = perft(newPositionsAfterMove, !color, depthCD - 1, localZobristHash, initDepth);
+			totalOfLeafsCaused += bufferLeafsCaused;
+			//REMOVE AFTER
+			if (initDepth == depthCD) {
+				//cout << "String rep of board: " << convertToString(allPositionBitboardsToMatrix(allCurrPositions)) << endl;
+				movesAndLeafNodes.push_back(moveToUCI(move) + ": " + to_string(bufferLeafsCaused));
+			}
 		}
+
 		LeafNodesAndCurrPos ttData;
 		ttData.leafNodes = totalOfLeafsCaused;
 		ttData.depth = depthCD;

@@ -267,6 +267,15 @@ MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool
 
 			if (pseudo) {
 				Bitboard kingOppRay = PreCalculatedRays[oppKingPos % 8][oppKingPos / 8][(dir + 2) % 4];
+
+				Bitboard posOppKingBlockers = kingOppRay & posCombinedBitboard;
+				//Change this to get the first blocker by manipulating(Rotating) the bitboard such that the least sig bit is the first blocker
+				while (posOppKingBlockers != 0) {
+					int posOfBlocker = _tzcnt_u64(posOppKingBlockers);
+					kingOppRay &= ~PreCalculatedRays[posOfBlocker % 8][posOfBlocker / 8][(dir + 2) % 4];
+					setBitTo(&posOppKingBlockers, posOfBlocker, 0);
+				}
+
 				//If the opp king ray hits one of their pieces
 				Bitboard blockingPiece = kingOppRay & oppColorCombinedBitboard;
 				//And this is the same piece which blocks this pieces ray

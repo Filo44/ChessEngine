@@ -56,7 +56,7 @@ class BitboardAndPieceInfo;
 
 // char** fenToMatrix(std::string fen);
 void delete2DArray(char** arr, int rows);
-string convertToString(char** a, int cols, int rows);
+string convertToString(char** a, int cols = 8, int rows = 8);
 string convertToJSArr(char** arr, int cols, int rows);
 string convertVofBBJS(vector<Bitboard> matrixVector);
 stringstream convertBBJS(Bitboard curBB);
@@ -72,6 +72,9 @@ char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
 MoveDesc parseMove(json moveStr, AllCurrPositions allCurrPositions);
 string convertVectorOfMovesToJs(vector<MoveDesc> moves);
 double timeManagementFunction(double timeRemaining);
+
+string squareToUCI(int pos);
+string moveToUCI(const MoveDesc& move);
 
 inline void setBitTo(Bitboard* initBB, int posX, int posY, bool value)
 {
