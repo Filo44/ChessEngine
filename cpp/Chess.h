@@ -65,7 +65,7 @@ string convertToJSArr(char** arr, int cols, int rows);
 string convertVofBBJS(vector<Bitboard> matrixVector);
 stringstream convertBBJS(Bitboard curBB);
 string allPosMovesToMatrix(AllPosMoves posMoves);
-ZobristHash genInitZobristHash(AllCurrPositions currPositions);
+ZobristHash genInitZobristHash(AllCurrPositions currPositions, bool colorToMove);
 EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable);
 string convertMoveToJS(MoveDesc move);
 EvalAndBestMove getMoveAndApplyFromPos(AllCurrPositions& allPositionBitboards, ZobristHash& currZobristHash, double timeLeft, bool color);
@@ -77,6 +77,7 @@ MoveDesc parseMove(json moveStr, AllCurrPositions allCurrPositions);
 string convertVectorOfMovesToJs(vector<MoveDesc> moves);
 double timeManagementFunction(double timeRemaining);
 string convertMovesByPosToUCIMoves(MovesByPos moves);
+string convertMovesVectorToUCIMoves(vector<MoveDesc> movesVector);
 
 string squareToUCI(int pos);
 string moveToUCI(const MoveDesc& move);

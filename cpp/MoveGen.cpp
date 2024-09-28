@@ -58,13 +58,11 @@ MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colo
 		pawnMoveBitboard |= bufferBitboard;
 
 		//En passant
-		Bitboard enPassantCapBitboard = pawnPosBitboard;
 		//En passant towards lower files
-		enPassantCapBitboard = ((enPassantCapBitboard & ~file[0]) >> 1) & (1ULL << pawnWhoDoubleMovedPos);
+		Bitboard enPassantCapBitboard = ((pawnPosBitboard & ~file[0]) >> 1) & (1ULL << pawnWhoDoubleMovedPos);
 		//En passant towards higher files(Diff variable because I need to check whether it was to the right or left after to get the pos of the piece that is en passant-ing)
-		Bitboard higherFileEnPassantCapBitboard = ((enPassantCapBitboard & ~file[7]) << 1) & (1ULL << pawnWhoDoubleMovedPos);
+		Bitboard higherFileEnPassantCapBitboard = ((pawnPosBitboard & ~file[7]) << 1) & (1ULL << pawnWhoDoubleMovedPos);
 		enPassantCapBitboard |= higherFileEnPassantCapBitboard;
-
 
 		if (enPassantCapBitboard != 0) {
 			//Bitboard enPassantMoveBitboard = colorToMove ? (enPassantCapBitboard >> 8) : (enPassantCapBitboard << 8);
@@ -390,9 +388,11 @@ MoveAndCapBitboards genKingLegalMoves(Bitboard kingPseudoCapBitboard, Bitboard k
 	return { kingMoveBitboard , kingCapBitboard };
 }
 
-bool goesIntoCheck(AllCurrPositions allCurrPositions, MoveDesc move, bool colorToMoveBeforeThisMove) {
-	allCurrPositions.applyMove(move, 0);
-	return checkChecks(allCurrPositions, colorToMoveBeforeThisMove).numOfChecks > 0;
+bool goesIntoCheck(AllCurrPositions allCurrPositions, MoveDesc move, bool colorToMove) {
+	allCurrPositions.applyMove(move, (ZobristHash)0);
+	calcCombinedPos(allCurrPositions);
+	//Don't want to invert the color because you want to know if YOU are in check after YOU make the move.
+	return checkChecks(allCurrPositions, colorToMove).numOfChecks > 0;
 }
 
 array<Bitboard, 2> pieceToPieceBitboard(MoveMag dir, int x, int y) {
@@ -697,7 +697,6 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool colorToMove) {
 	CheckData res;
 	res.checkerLocations = checkerLocations;
 	res.numOfChecks = numOfChecks;
-	//numOfChecks and checkerLocations are references thus I can just return res.
 	return res;
 }
 

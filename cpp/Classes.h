@@ -146,9 +146,26 @@ public:
 		cout << "I hate breakpoints" << endl;
 		return -1;
 	}
+	uint8_t getStartingCastlingKey() const {
+		uint8_t initCastlingKey = 0b00000000;
+		//Checks white
+		if (castlingRights[1].canCastleKSide) {
+			initCastlingKey |= (0b00000100);
+		}
+		if (castlingRights[1].canCastleQSide) {
+			initCastlingKey |= (0b00001000);
+		}
+		//Checks black
+		if (castlingRights[0].canCastleKSide) {
+			initCastlingKey |= (0b00000001);
+		}
+		if (castlingRights[0].canCastleQSide) {
+			initCastlingKey |= (0b00000010);
+		}
+		return initCastlingKey;
+	}
 
 	ZobristHash applyMove(MoveDesc move, ZobristHash currZobristHash) {
-
 		Bitboard& thisPieceTypeBitboard = pieceTypePositions[move.pieceType];
 		//Buffers the application of the pawnWhoDoubleMovedPos such that we can delete and set the new pawnWhoDoubleMovedPos at the end while still being able to read it
 		int pawnWhoDoubleMovedPosBuffer = -1;
@@ -176,22 +193,9 @@ public:
 			}
 		}
 		else if (move.pieceType == (color ? whiteKing : blackKing)) {
-			uint8_t initCastlingKey = 0b00000000;
-			//Checks white
-			if (castlingRights[1].canCastleKSide) {
-				initCastlingKey |= (0b00000100);
-			}
-			if (castlingRights[1].canCastleQSide) {
-				initCastlingKey |= (0b00001000);
-			}
-			//Checks black
-			if (castlingRights[0].canCastleKSide) {
-				initCastlingKey |= (0b00000001);
-			}
-			if (castlingRights[0].canCastleQSide) {
-				initCastlingKey |= (0b00000010);
-			}
-			//Removes the old number
+			//THERE IS A CODE DUPLICATE IN THE FOLLOWING ELSE IF STATEMENT, IF YOU MAKE CHANGES HERE, DUPLIATE THOSE CHANGES THERE
+			uint8_t initCastlingKey = getStartingCastlingKey();
+
 			currZobristHash ^= CastlingSeed[initCastlingKey];
 			//Any king move, including castling, removes the right to castle.
 			castlingRights[color].canCastleKSide = false;
@@ -200,7 +204,7 @@ public:
 			uint8_t castlingKey = 0b00000000;
 			//Checks the opposite color, as this color is obviously going to not have any castling rights anymore
 			//YES I am checking this twice, optimize later.
-			int colorMult = !color ? 4 : 0;
+			int colorMult = !color ? 4 : 1;
 			if (castlingRights[!color].canCastleKSide) {
 				castlingKey |= (0b00000001 * colorMult);
 			}
@@ -226,8 +230,13 @@ public:
 				int rookMovingFromX = ((castlingQSide) ? 0 : 7);
 
 				Bitboard& rooksBitboard = pieceTypePositions[color ? whiteRook : blackRook];
+				//Removes the rooks pos hash from the currZobristHash:
 				setBitTo(&rooksBitboard, rookMovingFromX + (moveToY * 8), 0);
+				currZobristHash ^= ZobristSeed[color ? whiteRook : blackRook][rookMovingFromX + (moveToY * 8)];
+
+				//Adds the rook
 				setBitTo(&rooksBitboard, rookMovingToX + (moveToY * 8), 1);
+				currZobristHash ^= ZobristSeed[color ? whiteRook : blackRook][rookMovingToX + (moveToY * 8)];
 			}
 
 		}
@@ -237,11 +246,28 @@ public:
 			//If a rook moves from those squares it must mean that they disable that side's castling
 			if (posFromY == rookStartingRank) {
 				//Queen and king side have the same x for both sides
-				if (posFromX == 0) {
+				uint8_t castlingKey = 0b11111111;
+				if (castlingRights[color].canCastleKSide || castlingRights[color].canCastleQSide) {
+					uint8_t initCastlingKey = getStartingCastlingKey();
+					//Removes the old number
+					currZobristHash ^= CastlingSeed[initCastlingKey];
+					castlingKey = initCastlingKey;
+				}
+
+				int colorMult = color ? 4 : 1;
+				if (posFromX == 0 && castlingRights[color].canCastleQSide) {
+					//Turns off the bit in the position which indicates color's queen side castling right.
+					castlingKey &= ~(0b00000010 * colorMult);
 					castlingRights[color].canCastleQSide = false;
 				}
-				else if (posFromX == 7) {
+				else if (posFromX == 7 && castlingRights[color].canCastleKSide) {
+					//Turns off the bit in the position which indicates color's king side castling right.
+					castlingKey &= ~(0b00000001 * colorMult);
 					castlingRights[color].canCastleKSide = false;
+				}
+				if (castlingKey != 0b11111111) {
+					//Castling key cannot be equal to that if it triggered the first if statement
+					currZobristHash ^= CastlingSeed[castlingKey];
 				}
 			}
 		}
@@ -283,6 +309,7 @@ public:
 			currZobristHash ^= ZobristSeed[toCapturePieceType][moveToX + (moveToY * 8)];
 		}
 
+
 		if (pawnWhoDoubleMovedPos != -1) {
 			currZobristHash ^= EnPassantFileSeed[pawnWhoDoubleMovedPos % 8];
 		}
@@ -293,6 +320,7 @@ public:
 		currZobristHash ^= SideToMoveIsBlack;
 		return currZobristHash;
 	}
+
 };
 
 struct EvalAndBestMove {

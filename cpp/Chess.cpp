@@ -7,11 +7,11 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-	int depth = 1;
+	int depth = 4;
 	int port = 8080;
 	bool color;
-
-	string lFen = "rnbq1k1r/pp1P1ppp/2p5/8/1bB5/8/PPPBNnPP/RN1QK2R w KQ - 3 9";
+	string lFen = "5k2/8/8/8/8/8/8/4K2R w K - 0 1";
+	//string lFen = "3k4/8/8/K1Pp3r/8/8/8/8 w - d6 0 2";
 	if (argc > 1) {
 		depth = stoi(argv[1]);
 		if (argc > 2) {
@@ -35,24 +35,31 @@ int main(int argc, char* argv[]) {
 	color = gameState.color; //REMOVE THIS FOR THE ONE TO ONE FOR THE CHESS ENGINES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	cout << "Calculated gamestate" << endl;
 	//cout << "Board: " << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
-
-	ZobristHash currZobristHash = genInitZobristHash(allPositionBitboards);
+	ZobristHash currZobristHash = genInitZobristHash(allPositionBitboards, color);
 	cout << "Calculated the zobrist hash" << endl;
 	//vector<MoveDesc> posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
 	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
 	//cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
+	//cout << "CurrPos: " << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
+	//cout << "Zobrist hash: " << currZobristHash << endl;
 
 	//MoveDesc move;
 	//move.pieceMovingColor = BLACK;
 	//move.moveOrCapture = MOVE;
 	//move.pieceType = blackPawn;
-	//move.posOfMove = 26;
-	//move.posFrom = 10;
+	//move.posOfMove = 27;
+	//move.posFrom = 11;
 
-	//currZobristHash = allPositionBitboards.applyMove(posMoves[moveToApplyIndex], currZobristHash);
-	//posMoves = fullMoveGenLoop(!color, allPositionBitboards, currZobristHash);
-	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;;
+	//color = !color;
+	//depth--;
+	//currZobristHash = allPositionBitboards.applyMove(posMoves[14], currZobristHash);
+	//calcCombinedPos(allPositionBitboards);
+	//posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
+	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
+	//cout << "allPositionBitboards.pawnWhoDoubleMovedPos: " << allPositionBitboards.pawnWhoDoubleMovedPos << endl;
+	//cout << "Moves: " << endl << convertMovesVectorToUCIMoves(posMoves) << endl;
 	//cout << "CurrPos: " << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
+	//cout << "Zobrist hash: " << currZobristHash << endl;
 
 	amountOfLeafNodes = 0;
 	captures = 0;
@@ -257,6 +264,7 @@ PosAndColor fenToPosBitboards(std::string fen) {
 			int x = file - 97;
 			//cout << "En passant. X: "<<x<<", Y:" << y<<". " << endl;
 			//cout << "!res.color: " << !res.color << endl;
+			cout << "Pawn who double moved pos from FEN: " << x + (y * 8) << endl;
 			allPositionBitboards.pawnWhoDoubleMovedPos = x + (y * 8);
 		}
 	}
@@ -322,7 +330,7 @@ string allPosMovesToMatrix(AllPosMoves posMoves) {
 	return s;
 }
 
-ZobristHash genInitZobristHash(AllCurrPositions currPositions) {
+ZobristHash genInitZobristHash(AllCurrPositions currPositions, bool colorToMove) {
 	//When the first XOR is done, since it is instantiated to zero, the currZobristHash will become that number.
 	ZobristHash currZobristHash = 0;
 	uint8_t castlingKey = 0b00000000;
@@ -338,7 +346,7 @@ ZobristHash genInitZobristHash(AllCurrPositions currPositions) {
 			}
 		}
 		//If it is white it multiplies everything by 4, or shifts it up twice
-		int colorMult = color ? 4 : 0;
+		int colorMult = color ? 4 : 1;
 		if (currPositions.castlingRights[color].canCastleKSide) {
 			castlingKey |= (0b00000001 * colorMult);
 		}
@@ -355,10 +363,13 @@ ZobristHash genInitZobristHash(AllCurrPositions currPositions) {
 	}
 
 	currZobristHash ^= CastlingSeed[castlingKey];
+	if (colorToMove == false) {
+		currZobristHash ^= SideToMoveIsBlack;
 
-	return currZobristHash;
+
+		return currZobristHash;
+	}
 }
-
 void delete2DArray(char** arr, int rows) {
 	for (int i = 0; i < rows; ++i) {
 		delete[] arr[i];
@@ -576,6 +587,13 @@ string convertMovesByPosToUCIMoves(MovesByPos moves) {
 	for (int i = 0; i < 64; i++) {
 		movesVector = addVectors(moves[i], movesVector);
 	}
+	for (MoveDesc move : movesVector) {
+		ss << moveToUCI(move) << "\n";
+	}
+	return ss.str();
+}
+string convertMovesVectorToUCIMoves(vector<MoveDesc> movesVector) {
+	stringstream ss;
 	for (MoveDesc move : movesVector) {
 		ss << moveToUCI(move) << "\n";
 	}
