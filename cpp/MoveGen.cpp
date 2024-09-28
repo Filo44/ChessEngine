@@ -221,7 +221,9 @@ Bitboard genCastlingMoves(AllCurrPositions allCurrPositions, bool colorToMove, c
 	//Pseudo, although not passed as a parameter, is known to be false
 	if (allCurrPositions.castlingRights[colorToMove].canCastleQSide) {
 		//This means that the king and the queen-side rook haven't been moved.
-		if ((castlingRays[colorToMove][QUEENSIDE] & allPosCombined) == 0 && (castlingRays[colorToMove][QUEENSIDE] & oppAttacking) == 0) {
+		//CHECKS QUEENSIDECASTLINGKINGMOVEMENT and not castling ray because it can't move only if a piece is attacking a square through which the king moves, 
+		// which for castling queenside isn't the same as the castling ray
+		if ((castlingRays[colorToMove][QUEENSIDE] & allPosCombined) == 0 && (queenSideCastlingKingMovement[colorToMove] & oppAttacking) == 0) {
 			//If either the castling ray and a piece overlap or the castling ray and the oppAttacking bitboard overlap it means you can't castle.
 			//Shifts are inverted, i.e. shift right 2 means it moves the bits in the bitboard left 2.
 			res = kingPosBitboard >> 2;
