@@ -7,7 +7,7 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-	int depth = 4;
+	int depth = 5;
 	int port = 8080;
 	bool color;
 	string lFen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
@@ -83,7 +83,6 @@ int main(int argc, char* argv[]) {
 	unordered_map<ZobristHash, EvalAndBestMove> transpositionTable = {};
 	EvalAndBestMove res = iterativeSearch(allPositionBitboards, color, currZobristHash, timeManagementFunction(30));
 	cout << "Eval " << res.eval << endl;
-	cout << "Hi" << endl;
 
 
 	//Fixes CORS errors
@@ -538,9 +537,9 @@ EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, Z
 			res.bestMove = searchResults.bestMove;
 
 		}
-		//if (depth == 5) {
-		//	break;
-		//}
+		/*if (depth == 5) {
+			break;
+		}*/
 
 		depth++;
 	}
@@ -588,7 +587,7 @@ string convertMovesByPosToUCIMoves(MovesByPos moves) {
 	vector<MoveDesc> movesVector;
 	stringstream ss;
 	for (int i = 0; i < 64; i++) {
-		movesVector = addVectors(moves[i], movesVector);
+		addVectors(moves[i], movesVector);
 	}
 	for (MoveDesc move : movesVector) {
 		ss << moveToUCI(move) << "\n";

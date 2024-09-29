@@ -50,7 +50,7 @@ MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool
 
 void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos& moves);
 void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int pos, MovesByPos& moves);
-MovesByPos bitboardToPromotionMoves(Bitboard bitboard, bool pieceMovingColor, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos moves);
+void bitboardToPromotionMoves(Bitboard bitboard, bool pieceMovingColor, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos& moves);
 vector<MoveDesc> bitboardToMoveVector(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int pos);
 bool goesIntoCheck(AllCurrPositions allCurrPositions, MoveDesc move, bool colorToMoveBeforeThisMove);
 
@@ -61,24 +61,13 @@ void calcCombinedMoves(AllPosMoves& posMoves);
 bool checkBounds(int x, int y);
 vector<Bitboard> arrayToVector(array<Bitboard, 2> arr);
 
-inline vector<MoveDesc> addVectors(vector<MoveDesc> v1, vector<MoveDesc> v2) {
-	if (v1.size() > v2.size()) {
-		v1.insert(v1.end(), v2.begin(), v2.end());
-		return v1;
-	}
-	else {
-		v2.insert(v2.end(), v1.begin(), v1.end());
-		return v2;
-	}
+inline void addVectors(vector<MoveDesc>& v1, vector<MoveDesc>& v2) {
+	v2.insert(v2.end(), v1.begin(), v1.end());
 }
-inline vector<PinnedPieceData> addVectors(vector<PinnedPieceData> v1, vector<PinnedPieceData> v2) {
-	if (v1.size() > v2.size()) {
-		v1.insert(v1.end(), v2.begin(), v2.end());
-		return v1;
-	}
-	else {
-		v2.insert(v2.end(), v1.begin(), v1.end());
-		return v2;
-	}
+inline void addVectorsCopyFirst(vector<MoveDesc> v1, vector<MoveDesc>& v2) {
+	v2.insert(v2.end(), v1.begin(), v1.end());
+}
+inline void addVectors(vector<PinnedPieceData>& v1, vector<PinnedPieceData>& v2) {
+	v2.insert(v2.end(), v1.begin(), v1.end());
 }
 
