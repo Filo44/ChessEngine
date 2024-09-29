@@ -27,10 +27,12 @@ struct PieceInfo {
 class MoveDesc {
 public:
 	bool pieceMovingColor;
+	//Has color
 	int pieceType;
 	int posFrom;
 	int posOfMove;
 	bool moveOrCapture;
+	//Has color
 	int promotingToPiece = -1;
 	bool enPassant = false;
 	bool nullMove = false;
@@ -85,6 +87,7 @@ public:
 class AttackingAndPinnedBBs {
 public:
 	Bitboard attacking;
+	Bitboard pawnAttacking;
 	vector<PinnedPieceData> pinnedPieces;
 };
 //struct MoveCapAndPinnedBBs {
@@ -109,6 +112,10 @@ struct MoveCapPinnedAndMoves {
 	vector<PinnedPieceData> pinnedPieces = {};
 	MovesByPos moves;
 	int enPassantCapPos = -1;
+};
+struct MovesVectAndPawnAtt {
+	vector<MoveDesc> moves;
+	Bitboard pawnAttacking;
 };
 
 
@@ -136,8 +143,8 @@ public:
 	Bitboard colorCombinedPosBitboard[2];
 	int pawnWhoDoubleMovedPos = -1;
 	CastlingRights castlingRights[2];
-	int searchPieceType(int pos, bool color) {
-		for (int i = color * 6; i < 6 + (color * 6); i++) {
+	int searchPieceType(int pos, bool colorOfPiece) {
+		for (int i = colorOfPiece * 6; i < 6 + (colorOfPiece * 6); i++) {
 			if (getBit(pieceTypePositions[i], pos)) {
 				return i;
 			}

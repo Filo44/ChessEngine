@@ -49,12 +49,12 @@ MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colo
 		pawnMoveBitboard = (colorToMove ? ((pawnPosBitboard & ~lastRank) >> 8) : ((pawnPosBitboard & ~lastRank) << 8)) & ~posCombinedBitboard;
 		moves = bitboardToPromotionMoves(pawnMoveBitboard & lastRank, colorToMove, MOVE, 0, 1 * yMult, moves);
 		pawnMoveBitboard &= ~lastRank;
-		moves = bitboardToMoves(pawnMoveBitboard, colorToMove, pieceType, MOVE, 0, 1 * yMult, moves);
+		bitboardToMoves(pawnMoveBitboard, colorToMove, pieceType, MOVE, 0, 1 * yMult, moves);
 		//Then it "checks" (AND it with a bitboard of those ranks) whether they are in the 3rd or 6th rank after being moved once,
 		//  thus meaning they were originally in the first rank
 		//Then takes away the ones which have just moved into a piece
 		bufferBitboard = (colorToMove ? (pawnMoveBitboard & whiteDoubleRank) >> 8 : (pawnMoveBitboard & blackDoubleRank) << 8) & ~posCombinedBitboard;
-		moves = bitboardToMoves(bufferBitboard, colorToMove, pieceType, MOVE, 0, 2 * yMult, moves);
+		bitboardToMoves(bufferBitboard, colorToMove, pieceType, MOVE, 0, 2 * yMult, moves);
 		pawnMoveBitboard |= bufferBitboard;
 
 		//En passant
@@ -92,8 +92,8 @@ MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colo
 		moves = bitboardToPromotionMoves(bufferBitboard & lastRank, colorToMove, CAPTURE, 1, 1 * yMult, moves);
 		bufferBitboard &= ~lastRank;
 
-		moves = bitboardToMoves(pawnCapBitboard, colorToMove, pieceType, CAPTURE, -1, 1 * yMult, moves);
-		moves = bitboardToMoves(bufferBitboard, colorToMove, pieceType, CAPTURE, 1, 1 * yMult, moves);
+		bitboardToMoves(pawnCapBitboard, colorToMove, pieceType, CAPTURE, -1, 1 * yMult, moves);
+		bitboardToMoves(bufferBitboard, colorToMove, pieceType, CAPTURE, 1, 1 * yMult, moves);
 		pawnCapBitboard |= bufferBitboard;
 	}
 	else {
@@ -120,58 +120,58 @@ MoveCapAndMoveDescs genKnightBitboard(AllCurrPositions allCurrPositions, bool co
 	//dX=-2, dY=-1. Thus >> 2 + 8 = 10
 	knightMoveBitboard = (knightPosBitboard & ~file[0] & ~file[1] & ~cRank[0]) >> 10;
 	if (!pseudo) {
-		moves = bitboardToMoves(knightMoveBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, -2, -1, moves);
-		moves = bitboardToMoves(knightMoveBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, -2, -1, moves);
+		bitboardToMoves(knightMoveBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, -2, -1, moves);
+		bitboardToMoves(knightMoveBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, -2, -1, moves);
 	}
 	//dX=-2, dY=1. Thus << -2 + 8 = 6
 	bufferBitboard = (knightPosBitboard & ~file[0] & ~file[1] & ~cRank[7]) << 6;
 	knightMoveBitboard |= bufferBitboard;
 	if (!pseudo) {
-		moves = bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, -2, 1, moves);
-		moves = bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, -2, 1, moves);
+		bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, -2, 1, moves);
+		bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, -2, 1, moves);
 	}
 	//dX=2, dY=-1. Thus >> -2 + 8 = 6
 	bufferBitboard = (knightPosBitboard & ~file[6] & ~file[7] & ~cRank[0]) >> 6;
 	knightMoveBitboard |= bufferBitboard;
 	if (!pseudo) {
-		moves = bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, 2, -1, moves);
-		moves = bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, 2, -1, moves);
+		bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, 2, -1, moves);
+		bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, 2, -1, moves);
 	}
 	//dX=2, dY=1. Thus << 2 + 8 = 10
 	bufferBitboard = (knightPosBitboard & ~file[6] & ~file[7] & ~cRank[7]) << 10;
 	knightMoveBitboard |= bufferBitboard;
 	if (!pseudo) {
-		moves = bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, 2, 1, moves);
-		moves = bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, 2, 1, moves);
+		bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, 2, 1, moves);
+		bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, 2, 1, moves);
 	}
 
 	//dX=-1, dY=-2. Thus >> 1 + 16 = 17
 	bufferBitboard = (knightPosBitboard & ~cRank[0] & ~cRank[1] & ~file[0]) >> 17;
 	knightMoveBitboard |= bufferBitboard;
 	if (!pseudo) {
-		moves = bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, -1, -2, moves);
-		moves = bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, -1, -2, moves);
+		bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, -1, -2, moves);
+		bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, -1, -2, moves);
 	}
 	//dX=-1, dY=2. Thus << -1 + 16 = 15
 	bufferBitboard = (knightPosBitboard & ~cRank[6] & ~cRank[7] & ~file[0]) << 15;
 	knightMoveBitboard |= bufferBitboard;
 	if (!pseudo) {
-		moves = bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, -1, 2, moves);
-		moves = bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, -1, 2, moves);
+		bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, -1, 2, moves);
+		bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, -1, 2, moves);
 	}
 	//dX=1, dY=-2. Thus >> -1 + 16 = 15
 	bufferBitboard = (knightPosBitboard & ~cRank[0] & ~cRank[1] & ~file[7]) >> 15;
 	knightMoveBitboard |= bufferBitboard;
 	if (!pseudo) {
-		moves = bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, 1, -2, moves);
-		moves = bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, 1, -2, moves);
+		bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, 1, -2, moves);
+		bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, 1, -2, moves);
 	}
 	//dX=1, dY=2. Thus << 1 + 16 = 17
 	bufferBitboard = (knightPosBitboard & ~cRank[6] & ~cRank[7] & ~file[7]) << 17;
 	knightMoveBitboard |= bufferBitboard;
 	if (!pseudo) {
-		moves = bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, 1, 2, moves);
-		moves = bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, 1, 2, moves);
+		bitboardToMoves(bufferBitboard & ~posCombinedBitboard, colorToMove, pieceType, MOVE, 1, 2, moves);
+		bitboardToMoves(bufferBitboard & oppColorCombinedBitboard, colorToMove, pieceType, CAPTURE, 1, 2, moves);
 
 		knightCapBitboard = knightMoveBitboard & oppColorCombinedBitboard;
 		knightMoveBitboard &= ~posCombinedBitboard;
@@ -239,7 +239,7 @@ Bitboard genCastlingMoves(AllCurrPositions allCurrPositions, bool colorToMove, c
 	}
 	return { res };
 }
-MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, const DirectionBitboards(&PreCalculatedRays)[8][8], int pieceType, MovesByPos moves, int oppKingPos) {
+MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, const DirectionBitboards(&PreCalculatedRays)[8][8], int pieceType, MovesByPos& moves, int oppKingPos) {
 	Bitboard slidingPiecePosBitboard = allCurrPositions.pieceTypePositions[pieceType];
 	Bitboard posCombinedBitboard = allCurrPositions.allPiecesCombBitboard;
 	Bitboard oppColorCombinedBitboard = allCurrPositions.colorCombinedPosBitboard[!colorToMove];
@@ -303,8 +303,8 @@ MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool
 		if (!pseudo) {
 			bufferCapBitboard = bufferBitboard & oppColorCombinedBitboard;
 			bufferBitboard &= ~posCombinedBitboard;
-			moves = bitboardToMoves(bufferCapBitboard, colorToMove, pieceType, CAPTURE, pos, moves);
-			moves = bitboardToMoves(bufferBitboard, colorToMove, pieceType, MOVE, pos, moves);
+			bitboardToMoves(bufferCapBitboard, colorToMove, pieceType, CAPTURE, pos, moves);
+			bitboardToMoves(bufferBitboard, colorToMove, pieceType, MOVE, pos, moves);
 		}
 		else {
 			bufferCapBitboard = bufferBitboard & posCombinedBitboard;
@@ -315,9 +315,9 @@ MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool
 
 		setBitTo(&slidingPiecePosBitboard, pos, 0);
 	}
-	return { moveBitboard, capBitboard, pinnedPieces, moves };
+	return { moveBitboard, capBitboard, pinnedPieces };
 }
-MovesByPos bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos moves) {
+void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos& moves) {
 	MoveDesc templateMove;
 	templateMove.pieceMovingColor = pieceMovingColor;
 	templateMove.pieceType = pieceType;
@@ -329,9 +329,8 @@ MovesByPos bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceTy
 		moves[move.posFrom].push_back(move);
 		setBitTo(&bitboard, move.posOfMove, 0);
 	}
-	return moves;
 }
-MovesByPos bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int pos, MovesByPos moves) {
+void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int pos, MovesByPos& moves) {
 	MoveDesc templateMove;
 	templateMove.pieceMovingColor = pieceMovingColor;
 	templateMove.pieceType = pieceType;
@@ -343,7 +342,6 @@ MovesByPos bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceTy
 		moves[move.posFrom].push_back(move);
 		setBitTo(&bitboard, move.posOfMove, 0);
 	}
-	return moves;
 }
 MovesByPos bitboardToPromotionMoves(Bitboard bitboard, bool pieceMovingColor, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos moves) {
 	if (bitboard != 0) {
@@ -418,7 +416,7 @@ array<Bitboard, 2> pieceToPieceBitboard(MoveMag dir, int x, int y) {
 	return { localMoveBitboard, localCapBitboard };
 }
 
-vector<MoveDesc> fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrPositions, ZobristHash& currZobristHash) {
+MovesVectAndPawnAtt fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrPositions, ZobristHash& currZobristHash) {
 	calcCombinedPos(allCurrPositions);
 
 	Bitboard kingPosBB = allCurrPositions.pieceTypePositions[colorToMove ? whiteKing : blackKing];
@@ -456,40 +454,42 @@ vector<MoveDesc> fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrPosi
 	posMoves = addVectors(bitboardToMoveVector(legalKingMoves.moveBitboard, colorToMove, colorToMove ? whiteKing : blackKing, MOVE, kingPos), posMoves);
 	posMoves = addVectors(bitboardToMoveVector(legalKingMoves.capBitboard, colorToMove, colorToMove ? whiteKing : blackKing, CAPTURE, kingPos), posMoves);
 
-	return posMoves;
+	return { posMoves, attackingAndPinned.pawnAttacking };
 }
 
 AttackingAndPinnedBBs genAttackingAndPinned(AllCurrPositions allCurrPositions, bool colorToMove, int kingPos) {
 	vector<PinnedPieceData> pinnedPieces = {};
 	Bitboard currAttackingBitboard = 0;
+	Bitboard pawnAttacking = 0;
 	MoveCapAndMoveDescs results;
 	MoveAndCapBitboards onlyBitboardsResults;
 	MoveCapPinnedAndMoves slidingResults;
+	MovesByPos emptyMoves = {};
 
 	results = genPawnBitboard(allCurrPositions, !colorToMove, true);
-	currAttackingBitboard |= results.moveBitboard;
-	currAttackingBitboard |= results.capBitboard;
+	pawnAttacking = results.capBitboard | results.moveBitboard;
+	currAttackingBitboard = pawnAttacking;
 
 	results = genKnightBitboard(allCurrPositions, !colorToMove, true);
 	currAttackingBitboard |= results.moveBitboard;
 	currAttackingBitboard |= results.capBitboard;
 
-	slidingResults = genSlidingBitboard(allCurrPositions, !colorToMove, true, PreCalculatedHorizontalRays, !colorToMove ? whiteRook : blackRook, {}, kingPos);
+	slidingResults = genSlidingBitboard(allCurrPositions, !colorToMove, true, PreCalculatedHorizontalRays, !colorToMove ? whiteRook : blackRook, emptyMoves, kingPos);
 	currAttackingBitboard |= slidingResults.moveBitboard;
 	currAttackingBitboard |= slidingResults.capBitboard;
 	pinnedPieces = slidingResults.pinnedPieces;
 
-	slidingResults = genSlidingBitboard(allCurrPositions, !colorToMove, true, PreCalculatedDiagonalRays, !colorToMove ? whiteBishop : blackBishop, {}, kingPos);
+	slidingResults = genSlidingBitboard(allCurrPositions, !colorToMove, true, PreCalculatedDiagonalRays, !colorToMove ? whiteBishop : blackBishop, emptyMoves, kingPos);
 	currAttackingBitboard |= slidingResults.moveBitboard;
 	currAttackingBitboard |= slidingResults.capBitboard;
 	pinnedPieces = addVectors(slidingResults.pinnedPieces, pinnedPieces);
 
-	slidingResults = genSlidingBitboard(allCurrPositions, !colorToMove, true, PreCalculatedHorizontalRays, !colorToMove ? whiteQueen : blackQueen, {}, kingPos);
+	slidingResults = genSlidingBitboard(allCurrPositions, !colorToMove, true, PreCalculatedHorizontalRays, !colorToMove ? whiteQueen : blackQueen, emptyMoves, kingPos);
 	currAttackingBitboard |= slidingResults.moveBitboard;
 	currAttackingBitboard |= slidingResults.capBitboard;
 	pinnedPieces = addVectors(slidingResults.pinnedPieces, pinnedPieces);
 
-	slidingResults = genSlidingBitboard(allCurrPositions, !colorToMove, true, PreCalculatedDiagonalRays, !colorToMove ? whiteQueen : blackQueen, {}, kingPos);
+	slidingResults = genSlidingBitboard(allCurrPositions, !colorToMove, true, PreCalculatedDiagonalRays, !colorToMove ? whiteQueen : blackQueen, emptyMoves, kingPos);
 	currAttackingBitboard |= slidingResults.moveBitboard;
 	currAttackingBitboard |= slidingResults.capBitboard;
 	pinnedPieces = addVectors(slidingResults.pinnedPieces, pinnedPieces);
@@ -502,6 +502,7 @@ AttackingAndPinnedBBs genAttackingAndPinned(AllCurrPositions allCurrPositions, b
 	AttackingAndPinnedBBs res;
 	res.pinnedPieces = pinnedPieces;
 	res.attacking = currAttackingBitboard;
+	res.pawnAttacking = pawnAttacking;
 	return res;
 }
 vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool colorToMove, CheckData checkData, int kingPos) {
@@ -589,10 +590,10 @@ vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinned
 
 	moves = genPawnBitboard(allCurrPositions, colorToMove, false).moves;
 	moves = genKnightBitboard(allCurrPositions, colorToMove, false, moves).moves;
-	moves = genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteRook : blackRook, moves).moves;
-	moves = genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteBishop : blackBishop, moves).moves;
-	moves = genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteQueen : blackQueen, moves).moves;
-	moves = genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteQueen : blackQueen, moves).moves;
+	genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteRook : blackRook, moves);
+	genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteBishop : blackBishop, moves);
+	genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteQueen : blackQueen, moves);
+	genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteQueen : blackQueen, moves);
 
 	if (pinnedPieces.size() != 0) {
 		for (const PinnedPieceData& pinnedPiece : pinnedPieces) {
@@ -663,19 +664,20 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool colorToMove) {
 		//CurrColor and not its opposite as we won't to check whether we attack something of the opposite colorToMove(So as if we were the same colorToMove as the king)
 		int normalizedPieceType = pieceType > 5 ? pieceType - 6 : pieceType;
 		Bitboard gennedCapBitboard;
+		MovesByPos emptyMoves = {};
 		switch (normalizedPieceType) {
 		case rook:
-			gennedCapBitboard = genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteRook : blackRook).capBitboard;
+			gennedCapBitboard = genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteRook : blackRook, emptyMoves).capBitboard;
 			break;
 		case knight:
 			gennedCapBitboard = genKnightBitboard(kingMorphedPositions, colorToMove, false).capBitboard;
 			break;
 		case bishop:
-			gennedCapBitboard = genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteBishop : blackBishop).capBitboard;
+			gennedCapBitboard = genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteBishop : blackBishop, emptyMoves).capBitboard;
 			break;
 		case queen:
-			gennedCapBitboard = genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteQueen : blackQueen).capBitboard
-				| genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteQueen : blackQueen).capBitboard;
+			gennedCapBitboard = genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteQueen : blackQueen, emptyMoves).capBitboard
+				| genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteQueen : blackQueen, emptyMoves).capBitboard;
 			break;
 		case pawn:
 			gennedCapBitboard = genPawnBitboard(kingMorphedPositions, colorToMove, true).capBitboard;

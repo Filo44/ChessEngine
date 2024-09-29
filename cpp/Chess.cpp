@@ -10,8 +10,8 @@ int main(int argc, char* argv[]) {
 	int depth = 4;
 	int port = 8080;
 	bool color;
-	string lFen = "5k2/8/8/8/8/8/8/4K2R w K - 0 1";
-	//string lFen = "3k4/8/8/K1Pp3r/8/8/8/8 w - d6 0 2";
+	string lFen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+	//string lFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 	if (argc > 1) {
 		depth = stoi(argv[1]);
 		if (argc > 2) {
@@ -61,29 +61,29 @@ int main(int argc, char* argv[]) {
 	//cout << "CurrPos: " << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
 	//cout << "Zobrist hash: " << currZobristHash << endl;
 
-	amountOfLeafNodes = 0;
-	captures = 0;
-	enPassant = 0;
-	totPos = 0;
-	transpositionTablePerft = {};
-	movesAndLeafNodes = {};
-	//transpositionTable = {};
-	cout << "Starting the perft search " << endl;
-	uint64_t actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash, depth);
-	cout << "actualAmountOfLeafNodes: " << actualAmountOfLeafNodes << endl;
-	cout << "enPassant: " << enPassant << endl;
-	cout << "captures: " << captures << endl;
-	cout << "totPos: " << totPos << endl;
-	for (string moveAndLeafNode : movesAndLeafNodes) {
-		cout << moveAndLeafNode << endl;
-	}
-	cout << "FINISHED" << endl;
-	return actualAmountOfLeafNodes;
+	//amountOfLeafNodes = 0;
+	//captures = 0;
+	//enPassant = 0;
+	//totPos = 0;
+	//transpositionTablePerft = {};
+	//movesAndLeafNodes = {};
+	////transpositionTable = {};
+	//cout << "Starting the perft search " << endl;
+	//uint64_t actualAmountOfLeafNodes = perft(allPositionBitboards, color, depth, currZobristHash, depth);
+	//cout << "actualAmountOfLeafNodes: " << actualAmountOfLeafNodes << endl;
+	//cout << "enPassant: " << enPassant << endl;
+	//cout << "captures: " << captures << endl;
+	//cout << "totPos: " << totPos << endl;
+	//for (string moveAndLeafNode : movesAndLeafNodes) {
+	//	cout << moveAndLeafNode << endl;
+	//}
+	//cout << "FINISHED" << endl;
+	//return actualAmountOfLeafNodes;
 
-	/*transpositionTable = {};
-	EvalAndBestMove res = minMax(allPositionBitboards, color, depth, currZobristHash);
+	unordered_map<ZobristHash, EvalAndBestMove> transpositionTable = {};
+	EvalAndBestMove res = iterativeSearch(allPositionBitboards, color, currZobristHash, timeManagementFunction(30));
 	cout << "Eval " << res.eval << endl;
-	cout << "Hi" << endl; */
+	cout << "Hi" << endl;
 
 
 	//Fixes CORS errors
@@ -518,19 +518,19 @@ string convertMoveToJS(MoveDesc move) {
 }
 
 double timeManagementFunction(double timeRemaining) {
-	return 10.00;
+	return 30.00;
 }
 
 EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable) {
 	double cutOffTime = (double)time(nullptr) + timeAvailable;
-
+	extern unordered_map<ZobristHash, EvalAndBestMove> transpositionTable;
 	EvalAndBestMove res;
 	int depth = 2;
 	while (time(nullptr) < cutOffTime) {
 		cout << "Depth: " << depth << endl;
 
 		//transpositionTable = {};
-		EvalAndBestMove searchResults = minMax(allCurrPositions, color, depth, currZobristHash, cutOffTime);
+		EvalAndBestMove searchResults = minMax(allCurrPositions, color, depth, currZobristHash, -INFINITY, INFINITY, cutOffTime);
 
 		//Currently ignores aborted searches
 		if (!searchResults.abortedDueToTime && !searchResults.bestMove.nullMove) {
@@ -538,7 +538,6 @@ EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, Z
 			res.bestMove = searchResults.bestMove;
 
 		}
-
 		depth++;
 	}
 	return res;

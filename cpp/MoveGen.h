@@ -25,6 +25,7 @@ struct MoveCapAndMoveDescs;
 struct MoveCapAndMoveVector;
 struct MoveCapPinnedAndMoves;
 struct MoveAndCapBitboards;
+struct MovesVectAndPawnAtt;
 
 class AllCurrPositions;
 
@@ -34,7 +35,7 @@ using ZobristHash = uint64_t;
 using MovesByPos = array<vector<MoveDesc>, 64>;
 using DirectionBitboards = array<Bitboard, 4>;
 
-vector<MoveDesc> fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrPositions, ZobristHash& currZobristHash);
+MovesVectAndPawnAtt fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrPositions, ZobristHash& currZobristHash);
 AttackingAndPinnedBBs genAttackingAndPinned(AllCurrPositions allCurrPositions, bool currColor, int kingPos);
 vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool colorToMove, CheckData checkData, int kingPos);
 MoveMag kingOppDir(MoveMag dir, int kingPos);
@@ -45,10 +46,10 @@ MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colo
 MoveCapAndMoveDescs genKnightBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, MovesByPos moves = {});
 MoveAndCapBitboards genPseudoKingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, const Bitboard& kingPosBitboard, bool pseudo);
 Bitboard genCastlingMoves(AllCurrPositions allCurrPositions, bool colorToMove, const Bitboard& kingPosBitboard, Bitboard oppAttacking);
-MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, const DirectionBitboards(&PreCalculatedRays)[8][8], int pieceType, MovesByPos moves = {}, int oppKingPos = -1);
+MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, const DirectionBitboards(&PreCalculatedRays)[8][8], int pieceType, MovesByPos& moves, int oppKingPos = -1);
 
-MovesByPos bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos moves);
-MovesByPos bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int pos, MovesByPos moves);
+void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos& moves);
+void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int pos, MovesByPos& moves);
 MovesByPos bitboardToPromotionMoves(Bitboard bitboard, bool pieceMovingColor, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos moves);
 vector<MoveDesc> bitboardToMoveVector(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int pos);
 bool goesIntoCheck(AllCurrPositions allCurrPositions, MoveDesc move, bool colorToMoveBeforeThisMove);

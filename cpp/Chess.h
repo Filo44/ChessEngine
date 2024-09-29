@@ -7,8 +7,10 @@
 #include <unordered_map>
 #include <ctime>
 #include <intrin.h>
+#include <algorithm>
 
 using namespace nlohmann;
+using namespace std;
 
 enum Piece {
 	blackRook = 0,
@@ -33,7 +35,6 @@ enum PieceWithoutColor {
 	pawn = 5
 };
 
-using namespace std;
 using Bitboard = uint64_t;
 using MoveMag = array<int, 3>;
 using ZobristHash = uint64_t;
