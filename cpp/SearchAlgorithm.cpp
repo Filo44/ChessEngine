@@ -18,7 +18,7 @@ unordered_map<char, double> pieceTypeToVal = {
 };
 
 
-EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, double alpha, double beta, double cutOffTime) {
+EvalAndBestMove minMax(AllCurrPositions& allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, double alpha, double beta, double cutOffTime) {
 	if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD <= transpositionTable[currZobristHash].depth) {
 		return transpositionTable[currZobristHash];
 	}
@@ -30,7 +30,7 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 		double bestEval = color ? (-INFINITY) : (INFINITY);
 		MoveDesc bestMove;
 		bestMove.nullMove = true;
-		posMoves = orderMoves(posMoves, allCurrPositions, resultOfSearch.pawnAttacking);
+		orderMoves(posMoves, allCurrPositions, resultOfSearch.pawnAttacking);
 		for (MoveDesc move : posMoves) {
 			if (time(nullptr) > cutOffTime) {
 				EvalAndBestMove abortedRes;
@@ -74,12 +74,11 @@ EvalAndBestMove minMax(AllCurrPositions allCurrPositions, bool color, int depthC
 			}
 		}
 
-		EvalAndBestMove posSearchRes;
+		EvalAndBestMove& posSearchRes = transpositionTable[currZobristHash];
 		posSearchRes.eval = bestEval; //If there have been no moves(Checkmate) will be negative infinity if white and pos infinity if black
 		posSearchRes.depth = depthCD;
 		posSearchRes.noMoves = bestMove.nullMove;
 		posSearchRes.bestMove = bestMove;
-		transpositionTable[currZobristHash] = posSearchRes;
 		return posSearchRes;
 	}
 	else {
@@ -160,15 +159,14 @@ double simpleEval(AllCurrPositions allCurrPositions, bool colorToMove, ZobristHa
 	return total;
 }
 
-vector<MoveDesc> orderMoves(vector<MoveDesc> moves, AllCurrPositions allCurrPositions, Bitboard pawnAttacking) {
+void orderMoves(vector<MoveDesc>& moves, AllCurrPositions& allCurrPositions, Bitboard pawnAttacking) {
 	sort(begin(moves), end(moves), [&allCurrPositions, &pawnAttacking](auto const& move1, auto const& move2) {
 		//This is the correct operator(i.e. ">")
 		return guessEval(move1, allCurrPositions, pawnAttacking) > guessEval(move2, allCurrPositions, pawnAttacking);
 		});
-	return moves;
 }
 
-int guessEval(MoveDesc move, AllCurrPositions allCurrPositions, Bitboard pawnAttacking) {
+int guessEval(MoveDesc move, AllCurrPositions& allCurrPositions, Bitboard pawnAttacking) {
 	int boostFactor = 0;
 	int normalizedPieceType = move.pieceType > 5 ? move.pieceType - 6 : move.pieceType;
 	if (move.moveOrCapture == CAPTURE) {

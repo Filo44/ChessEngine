@@ -107,7 +107,7 @@ MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colo
 
 	return { pawnMoveBitboard, pawnCapBitboard, moves };
 }
-MoveCapAndMoveDescs genKnightBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, MovesByPos moves) {
+MoveCapAndMoveDescs genKnightBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, MovesByPos& moves) {
 	const int pieceType = colorToMove ? whiteKnight : blackKnight;
 	const Bitboard& knightPosBitboard = allCurrPositions.pieceTypePositions[pieceType];
 	Bitboard posCombinedBitboard = allCurrPositions.allPiecesCombBitboard;
@@ -177,7 +177,7 @@ MoveCapAndMoveDescs genKnightBitboard(AllCurrPositions allCurrPositions, bool co
 		knightMoveBitboard &= ~posCombinedBitboard;
 	}
 
-	return { knightMoveBitboard, knightCapBitboard, moves };
+	return { knightMoveBitboard, knightCapBitboard };
 }
 MoveAndCapBitboards genPseudoKingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, const Bitboard& kingPosBitboard, bool pseudo) {
 	const int pieceType = colorToMove ? whiteKing : blackKing;
@@ -470,7 +470,7 @@ AttackingAndPinnedBBs genAttackingAndPinned(AllCurrPositions allCurrPositions, b
 	pawnAttacking = results.capBitboard | results.moveBitboard;
 	currAttackingBitboard = pawnAttacking;
 
-	results = genKnightBitboard(allCurrPositions, !colorToMove, true);
+	results = genKnightBitboard(allCurrPositions, !colorToMove, true, emptyMoves);
 	currAttackingBitboard |= results.moveBitboard;
 	currAttackingBitboard |= results.capBitboard;
 
@@ -511,7 +511,6 @@ vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinned
 	vector<BitboardAndPieceInfo> checkerLocations = checkData.checkerLocations;
 	Bitboard checkerToKingBBMove = ~((Bitboard)0);
 	Bitboard checkerToKingBBCapture = ~((Bitboard)0);
-	MovesByPos moves;
 	if (numOfCheck == 1) {
 		if (checkerLocations[0].normalizedPieceType == queen || checkerLocations[0].normalizedPieceType == bishop || checkerLocations[0].normalizedPieceType == rook) {
 			//Generate the checker to king bitboard
@@ -588,8 +587,8 @@ vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinned
 		}
 	}
 
-	moves = genPawnBitboard(allCurrPositions, colorToMove, false).moves;
-	moves = genKnightBitboard(allCurrPositions, colorToMove, false, moves).moves;
+	MovesByPos moves = genPawnBitboard(allCurrPositions, colorToMove, false).moves;
+	genKnightBitboard(allCurrPositions, colorToMove, false, moves);
 	genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteRook : blackRook, moves);
 	genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteBishop : blackBishop, moves);
 	genSlidingBitboard(allCurrPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteQueen : blackQueen, moves);
@@ -670,7 +669,7 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool colorToMove) {
 			gennedCapBitboard = genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedHorizontalRays, colorToMove ? whiteRook : blackRook, emptyMoves).capBitboard;
 			break;
 		case knight:
-			gennedCapBitboard = genKnightBitboard(kingMorphedPositions, colorToMove, false).capBitboard;
+			gennedCapBitboard = genKnightBitboard(kingMorphedPositions, colorToMove, false, emptyMoves).capBitboard;
 			break;
 		case bishop:
 			gennedCapBitboard = genSlidingBitboard(kingMorphedPositions, colorToMove, false, PreCalculatedDiagonalRays, colorToMove ? whiteBishop : blackBishop, emptyMoves).capBitboard;

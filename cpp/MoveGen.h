@@ -43,7 +43,7 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor);
 array<Bitboard, 2> pieceToPieceBitboard(MoveMag dir, int x, int y);
 
 MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo);
-MoveCapAndMoveDescs genKnightBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, MovesByPos moves = {});
+MoveCapAndMoveDescs genKnightBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, MovesByPos& moves);
 MoveAndCapBitboards genPseudoKingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, const Bitboard& kingPosBitboard, bool pseudo);
 Bitboard genCastlingMoves(AllCurrPositions allCurrPositions, bool colorToMove, const Bitboard& kingPosBitboard, Bitboard oppAttacking);
 MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, const DirectionBitboards(&PreCalculatedRays)[8][8], int pieceType, MovesByPos& moves, int oppKingPos = -1);

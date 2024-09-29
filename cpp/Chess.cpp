@@ -538,6 +538,10 @@ EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, Z
 			res.bestMove = searchResults.bestMove;
 
 		}
+		//if (depth == 5) {
+		//	break;
+		//}
+
 		depth++;
 	}
 	return res;
