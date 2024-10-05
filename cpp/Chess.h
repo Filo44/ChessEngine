@@ -39,6 +39,7 @@ using Bitboard = uint64_t;
 using MoveMag = array<int, 3>;
 using ZobristHash = uint64_t;
 using DirectionBitboards = array<Bitboard, 4>;
+using int8 = uint8_t;
 
 class MoveDesc;
 class PieceTypeCurrPositions;

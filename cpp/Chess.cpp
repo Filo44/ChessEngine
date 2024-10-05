@@ -85,88 +85,88 @@ int main(int argc, char* argv[]) {
 	cout << "Eval " << res.eval << endl;
 
 
-	//Fixes CORS errors
-	svr.Options("/MoveResponse", [](const httplib::Request& /*req*/, httplib::Response& res) {
-		res.set_header("Access-Control-Allow-Origin", "*");
-		res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-		res.set_header("Access-Control-Allow-Headers", "Content-Type");
-		res.set_header("Access-Control-Max-Age", "3600"); // Optional: Cache preflight response for 1 hour
-		res.set_content("", "text/plain");
-		});
-	svr.Options("/GetFirstMove", [](const httplib::Request& /*req*/, httplib::Response& res) {
-		res.set_header("Access-Control-Allow-Origin", "*");
-		res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-		res.set_header("Access-Control-Allow-Headers", "Content-Type");
-		res.set_header("Access-Control-Max-Age", "3600"); // Optional: Cache preflight response for 1 hour
-		res.set_content("", "text/plain");
-		});
-
-	//// Handle GET requests
-	//svr.Get("/data", [&allPositionBitboards, &posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
-	//	char** arr = allPositionBitboardsToMatrix(allPositionBitboards);
-	//	res.set_content(convertToJSArr(arr, 8, 8), "text/plain");
+	////Fixes CORS errors
+	//svr.Options("/MoveResponse", [](const httplib::Request& /*req*/, httplib::Response& res) {
 	//	res.set_header("Access-Control-Allow-Origin", "*");
-	//	delete2DArray(arr, 8);
+	//	res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+	//	res.set_header("Access-Control-Allow-Headers", "Content-Type");
+	//	res.set_header("Access-Control-Max-Age", "3600"); // Optional: Cache preflight response for 1 hour
+	//	res.set_content("", "text/plain");
 	//	});
-	//svr.Get("/eval", [searchRes](const httplib::Request& /*req*/, httplib::Response& res) {
-	//    string eval = to_string(searchRes.eval);
-	//    res.set_content(eval, "text/plain");
-	//    res.set_header("Access-Control-Allow-Origin", "*");
-	//});
-	//Dummy function
-	svr.Get("/eval", [](const httplib::Request& /*req*/, httplib::Response& res) {
-		res.set_content("0", "text/plain");
-		res.set_header("Access-Control-Allow-Origin", "*");
-		});
+	//svr.Options("/GetFirstMove", [](const httplib::Request& /*req*/, httplib::Response& res) {
+	//	res.set_header("Access-Control-Allow-Origin", "*");
+	//	res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+	//	res.set_header("Access-Control-Allow-Headers", "Content-Type");
+	//	res.set_header("Access-Control-Max-Age", "3600"); // Optional: Cache preflight response for 1 hour
+	//	res.set_content("", "text/plain");
+	//	});
 
-	//svr.Get("/getBitboards", [posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
-	//	res.set_content(allPosMovesToMatrix(posMoves), "text/plain");
+	////// Handle GET requests
+	////svr.Get("/data", [&allPositionBitboards, &posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
+	////	char** arr = allPositionBitboardsToMatrix(allPositionBitboards);
+	////	res.set_content(convertToJSArr(arr, 8, 8), "text/plain");
+	////	res.set_header("Access-Control-Allow-Origin", "*");
+	////	delete2DArray(arr, 8);
+	////	});
+	////svr.Get("/eval", [searchRes](const httplib::Request& /*req*/, httplib::Response& res) {
+	////    string eval = to_string(searchRes.eval);
+	////    res.set_content(eval, "text/plain");
+	////    res.set_header("Access-Control-Allow-Origin", "*");
+	////});
+	////Dummy function
+	//svr.Get("/eval", [](const httplib::Request& /*req*/, httplib::Response& res) {
+	//	res.set_content("0", "text/plain");
 	//	res.set_header("Access-Control-Allow-Origin", "*");
 	//	});
-	svr.Post("/GetFirstMove", [&allPositionBitboards, &color, &currZobristHash](const httplib::Request& req, httplib::Response& res) {
-		cout << "Requested first move" << endl;
-		json json_data = json::parse(req.body);
-		double timeLeft = json_data["timeLeft"];
 
-		EvalAndBestMove resultOfMinMaxSearch = getMoveAndApplyFromPos(allPositionBitboards, currZobristHash, timeLeft, color);
+	////svr.Get("/getBitboards", [posMoves](const httplib::Request& /*req*/, httplib::Response& res) {
+	////	res.set_content(allPosMovesToMatrix(posMoves), "text/plain");
+	////	res.set_header("Access-Control-Allow-Origin", "*");
+	////	});
+	//svr.Post("/GetFirstMove", [&allPositionBitboards, &color, &currZobristHash](const httplib::Request& req, httplib::Response& res) {
+	//	cout << "Requested first move" << endl;
+	//	json json_data = json::parse(req.body);
+	//	double timeLeft = json_data["timeLeft"];
 
-		res.set_content(posAndGameStateToJS(allPositionBitboards, resultOfMinMaxSearch), "text/plain");
-		res.set_header("Access-Control-Allow-Origin", "*");
-		});
-	svr.Post("/MoveResponse", [&allPositionBitboards, &color, &currZobristHash](const httplib::Request& req, httplib::Response& res) {
-		cout << "Requesting move response" << endl;
-		// Parse the JSON data from the request body
-		cout << "Raw req.body: " << req.body << endl;
-		json json_data = json::parse(req.body);
-		cout << "JSON data" << json_data << endl;
-		double timeLeft = json_data["timeLeft"];
-		cout << "timeLeft: " << timeLeft << endl;
+	//	EvalAndBestMove resultOfMinMaxSearch = getMoveAndApplyFromPos(allPositionBitboards, currZobristHash, timeLeft, color);
 
-		cout << "Starting to parse" << endl;
-		MoveDesc move = parseMove(json_data["prevMove"], allPositionBitboards);
-		cout << "Finished parsing" << endl;
+	//	res.set_content(posAndGameStateToJS(allPositionBitboards, resultOfMinMaxSearch), "text/plain");
+	//	res.set_header("Access-Control-Allow-Origin", "*");
+	//	});
+	//svr.Post("/MoveResponse", [&allPositionBitboards, &color, &currZobristHash](const httplib::Request& req, httplib::Response& res) {
+	//	cout << "Requesting move response" << endl;
+	//	// Parse the JSON data from the request body
+	//	cout << "Raw req.body: " << req.body << endl;
+	//	json json_data = json::parse(req.body);
+	//	cout << "JSON data" << json_data << endl;
+	//	double timeLeft = json_data["timeLeft"];
+	//	cout << "timeLeft: " << timeLeft << endl;
 
-		// Apply the move and get the result
-		currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
-		calcCombinedPos(allPositionBitboards);
+	//	cout << "Starting to parse" << endl;
+	//	MoveDesc move = parseMove(json_data["prevMove"], allPositionBitboards);
+	//	cout << "Finished parsing" << endl;
 
-		cout << "Starting minMaxSearch" << endl;
-		EvalAndBestMove resultOfMinMaxSearch = getMoveAndApplyFromPos(allPositionBitboards, currZobristHash, timeLeft, color);
-		cout << "Finished minMaxSearch" << endl;
+	//	// Apply the move and get the result
+	//	currZobristHash = allPositionBitboards.applyMove(move, currZobristHash);
+	//	calcCombinedPos(allPositionBitboards);
 
-		// Convert the result to JSON and send it back
-		res.set_content(posAndGameStateToJS(allPositionBitboards, resultOfMinMaxSearch), "text/plain");
-		res.set_header("Access-Control-Allow-Origin", "*");
-		});
-	svr.Post("/exit", [](const httplib::Request& /*req*/, httplib::Response& res) {
-		return;
-		});
+	//	cout << "Starting minMaxSearch" << endl;
+	//	EvalAndBestMove resultOfMinMaxSearch = getMoveAndApplyFromPos(allPositionBitboards, currZobristHash, timeLeft, color);
+	//	cout << "Finished minMaxSearch" << endl;
 
-	// Run the server
-	svr.listen("localhost", port);
+	//	// Convert the result to JSON and send it back
+	//	res.set_content(posAndGameStateToJS(allPositionBitboards, resultOfMinMaxSearch), "text/plain");
+	//	res.set_header("Access-Control-Allow-Origin", "*");
+	//	});
+	//svr.Post("/exit", [](const httplib::Request& /*req*/, httplib::Response& res) {
+	//	return;
+	//	});
+
+	//// Run the server
+	//svr.listen("localhost", port);
 
 
-	return 0;
+	//return 0;
 }
 
 PosAndColor fenToPosBitboards(std::string fen) {
@@ -523,6 +523,7 @@ double timeManagementFunction(double timeRemaining) {
 EvalAndBestMove iterativeSearch(AllCurrPositions allCurrPositions, bool color, ZobristHash currZobristHash, double timeAvailable) {
 	double cutOffTime = (double)time(nullptr) + timeAvailable;
 	extern unordered_map<ZobristHash, EvalAndBestMove> transpositionTable;
+	transpositionTable.reserve(15000);
 	EvalAndBestMove res;
 	int depth = 2;
 	while (time(nullptr) < cutOffTime) {

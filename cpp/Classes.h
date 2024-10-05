@@ -20,17 +20,17 @@ const char pieces[12] = { 'r','n','b','q','k','p','R','N','B','Q','K','P' };
 extern std::unordered_map<char, int> pieceToNumber;
 
 struct PieceInfo {
-	int pieceType;
-	int piece;
+	int8 pieceType;
+	int8 piece;
 };
 
 class MoveDesc {
 public:
 	bool pieceMovingColor;
 	//Has color
-	int pieceType;
-	int posFrom;
-	int posOfMove;
+	int8 pieceType;
+	int8 posFrom;
+	int8 posOfMove;
 	bool moveOrCapture;
 	//Has color
 	int promotingToPiece = -1;
@@ -121,14 +121,14 @@ struct MovesVectAndPawnAtt {
 
 class CheckData {
 public:
-	int numOfChecks;
+	int8 numOfChecks;
 	vector<BitboardAndPieceInfo> checkerLocations;
 };
 class BitboardAndPieceInfo {
 public:
 	Bitboard checkerBitboard;
-	int pos;
-	int normalizedPieceType;
+	int8 pos;
+	int8 normalizedPieceType;
 };
 
 struct CastlingRights {
@@ -183,7 +183,7 @@ public:
 		bool color = move.pieceMovingColor;
 		bool moveOrCapture = move.moveOrCapture;
 		int posFrom = move.posFrom;
-		int normalizedPieceType = move.pieceType > 5 ? move.pieceType - 6 : move.pieceType;
+		int8 normalizedPieceType = move.pieceType > 5 ? move.pieceType - 6 : move.pieceType;
 
 		int forwards = (color) ? -1 : 1;
 
@@ -333,15 +333,16 @@ public:
 struct EvalAndBestMove {
 	double eval;
 	MoveDesc bestMove;
-	int depth;
+	int8 depth;
 	bool abortedDueToTime = false;
 	bool noMoves = false;
+
 };
 
 class LeafNodesAndCurrPos {
 public:
-	int leafNodes;
-	int depth;
+	int8 leafNodes;
+	int8 depth;
 };
 
 class PosAndColor {

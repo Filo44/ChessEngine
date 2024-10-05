@@ -317,48 +317,45 @@ MoveCapPinnedAndMoves genSlidingBitboard(AllCurrPositions allCurrPositions, bool
 	}
 	return { moveBitboard, capBitboard, pinnedPieces };
 }
-void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos& moves) {
+inline void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos& moves) {
 	MoveDesc templateMove;
 	templateMove.pieceMovingColor = pieceMovingColor;
 	templateMove.pieceType = pieceType;
 	templateMove.moveOrCapture = moveOrCapture;
 	while (bitboard != 0) {
-		MoveDesc move = templateMove;
-		move.posOfMove = _tzcnt_u64(bitboard);
-		move.posFrom = move.posOfMove - (dXApplied + (dYApplied * 8));
-		moves[move.posFrom].push_back(move);
-		setBitTo(&bitboard, move.posOfMove, 0);
+		templateMove.posOfMove = _tzcnt_u64(bitboard);
+		templateMove.posFrom = templateMove.posOfMove - (dXApplied + (dYApplied * 8));
+		moves[templateMove.posFrom].push_back(templateMove);
+		bitboard &= bitboard - 1;
 	}
 }
-void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int pos, MovesByPos& moves) {
+inline void bitboardToMoves(Bitboard bitboard, bool pieceMovingColor, int pieceType, bool moveOrCapture, int pos, MovesByPos& moves) {
 	MoveDesc templateMove;
 	templateMove.pieceMovingColor = pieceMovingColor;
 	templateMove.pieceType = pieceType;
 	templateMove.moveOrCapture = moveOrCapture;
 	templateMove.posFrom = pos;
 	while (bitboard != 0) {
-		MoveDesc move = templateMove;
-		move.posOfMove = _tzcnt_u64(bitboard);
-		moves[move.posFrom].push_back(move);
-		setBitTo(&bitboard, move.posOfMove, 0);
+		templateMove.posOfMove = _tzcnt_u64(bitboard);
+		moves[templateMove.posFrom].push_back(templateMove);
+		bitboard &= bitboard - 1;
 	}
 }
-void bitboardToPromotionMoves(Bitboard bitboard, bool pieceMovingColor, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos& moves) {
+inline void bitboardToPromotionMoves(Bitboard bitboard, bool pieceMovingColor, bool moveOrCapture, int dXApplied, int dYApplied, MovesByPos& moves) {
 	if (bitboard != 0) {
 		MoveDesc templateMove;
 		templateMove.pieceMovingColor = pieceMovingColor;
 		templateMove.pieceType = pieceMovingColor ? whitePawn : blackPawn;
 		templateMove.moveOrCapture = moveOrCapture;
 		while (bitboard != 0) {
-			MoveDesc move = templateMove;
-			move.posOfMove = _tzcnt_u64(bitboard);
-			move.posFrom = move.posOfMove - (dXApplied + (dYApplied * 8));
+			templateMove.posOfMove = _tzcnt_u64(bitboard);
+			templateMove.posFrom = templateMove.posOfMove - (dXApplied + (dYApplied * 8));
 			//pieceTypePromotingTo < (4 + (pieceMovingColor * 6)) and not .... < 6+... because it can't promote to a pawn or a king. :/ 
 			for (int pieceTypePromotingTo = pieceMovingColor * 6; pieceTypePromotingTo < (4 + (pieceMovingColor * 6)); pieceTypePromotingTo++) {
-				move.promotingToPiece = pieceTypePromotingTo;
-				moves[move.posFrom].push_back(move);
+				templateMove.promotingToPiece = pieceTypePromotingTo;
+				moves[templateMove.posFrom].push_back(templateMove);
 			}
-			setBitTo(&bitboard, move.posOfMove, 0);
+			bitboard &= bitboard - 1;
 		}
 	}
 }
@@ -515,7 +512,7 @@ vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinned
 			//Generate the checker to king bitboard
 
 			//It uses the first checker as if there are more than one, it wont use these variables
-			int& firstCheckerPos = checkerLocations[0].pos;
+			int firstCheckerPos = (int)checkerLocations[0].pos;
 			int firstCheckerX = firstCheckerPos % 8;
 			int firstCheckerY = firstCheckerPos / 8;
 
