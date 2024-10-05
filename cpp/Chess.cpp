@@ -584,17 +584,17 @@ string moveToUCI(const MoveDesc& move) {
 	return uciMove;
 }
 
-string convertMovesByPosToUCIMoves(MovesByPos moves) {
-	vector<MoveDesc> movesVector;
-	stringstream ss;
-	for (int i = 0; i < 64; i++) {
-		addVectors(moves[i], movesVector);
-	}
-	for (MoveDesc move : movesVector) {
-		ss << moveToUCI(move) << "\n";
-	}
-	return ss.str();
-}
+//string convertMovesByPosToUCIMoves(MovesByPos moves) {
+//	vector<MoveDesc> movesVector;
+//	stringstream ss;
+//	for (int i = 0; i < 64; i++) {
+//		addVectors(moves[i], movesVector);
+//	}
+//	for (MoveDesc move : movesVector) {
+//		ss << moveToUCI(move) << "\n";
+//	}
+//	return ss.str();
+//}
 string convertMovesVectorToUCIMoves(vector<MoveDesc> movesVector) {
 	stringstream ss;
 	for (MoveDesc move : movesVector) {

@@ -99,7 +99,7 @@ public:
 struct MoveCapAndMoveDescs {
 	Bitboard moveBitboard;
 	Bitboard capBitboard;
-	MovesByPos moves;
+	vector<MoveDesc> moves;
 };
 struct MoveCapAndMoveVector {
 	Bitboard moveBitboard;
@@ -110,7 +110,7 @@ struct MoveCapPinnedAndMoves {
 	Bitboard moveBitboard;
 	Bitboard capBitboard;
 	vector<PinnedPieceData> pinnedPieces = {};
-	MovesByPos moves;
+	vector<MoveDesc> moves;
 	int enPassantCapPos = -1;
 };
 struct MovesVectAndPawnAtt {

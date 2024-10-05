@@ -78,7 +78,7 @@ char** allPositionBitboardsToMatrix(AllCurrPositions allPositionBitboardsL);
 MoveDesc parseMove(json moveStr, AllCurrPositions allCurrPositions);
 string convertVectorOfMovesToJs(vector<MoveDesc> moves);
 double timeManagementFunction(double timeRemaining);
-string convertMovesByPosToUCIMoves(MovesByPos moves);
+//string convertMovesByPosToUCIMoves(MovesByPos moves);
 string convertMovesVectorToUCIMoves(vector<MoveDesc> movesVector);
 
 string squareToUCI(int pos);
