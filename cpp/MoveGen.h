@@ -37,12 +37,12 @@ using DirectionBitboards = array<Bitboard, 4>;
 
 MovesVectAndPawnAtt fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrPositions, ZobristHash& currZobristHash);
 AttackingAndPinnedBBs genAttackingAndPinned(AllCurrPositions allCurrPositions, bool currColor, int kingPos);
-vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool colorToMove, CheckData checkData, int kingPos);
+vector<MoveDesc> genAllLegalMoves(int numOfCheck, vector<PinnedPieceData> pinnedPieces, AllCurrPositions allCurrPositions, bool colorToMove, CheckData checkData, int kingPos, vector<MoveDesc>& moves);
 MoveMag kingOppDir(MoveMag dir, int kingPos);
 CheckData checkChecks(AllCurrPositions allCurrPositions, bool currColor);
 array<Bitboard, 2> pieceToPieceBitboard(MoveMag dir, int x, int y);
 
-MoveCapAndMoveDescs genPawnBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo);
+MoveCapAndMoveDescs genPawnBitboard(const AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo);
 MoveCapAndMoveDescs genKnightBitboard(AllCurrPositions allCurrPositions, bool colorToMove, bool pseudo, vector<MoveDesc>& moves);
 MoveAndCapBitboards genPseudoKingBitboard(AllCurrPositions allCurrPositions, bool colorToMove, const Bitboard& kingPosBitboard, bool pseudo);
 Bitboard genCastlingMoves(AllCurrPositions allCurrPositions, bool colorToMove, const Bitboard& kingPosBitboard, Bitboard oppAttacking);
