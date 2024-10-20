@@ -669,7 +669,8 @@ CheckData checkChecks(AllCurrPositions allCurrPositions, bool colorToMove) {
 			gennedCapBitboard = genPawnBitboard(kingMorphedPositions, colorToMove, true).capBitboard;
 			break;
 		default:
-			[[assume(false)]]
+			[[assume(false)]];
+			break;
 		}
 
 		Bitboard checkersBB = gennedCapBitboard & allCurrPositions.pieceTypePositions[pieceType > 5 ? pieceType - 6 : pieceType + 6];
