@@ -36,6 +36,9 @@ public:
 	int promotingToPiece = -1;
 	bool enPassant = false;
 	bool nullMove = false;
+
+	int depthLeftAtLastSearch = -1;
+	Eval prevEval;
 };
 
 class SinglePiecePosMoves {
@@ -330,13 +333,18 @@ public:
 
 };
 
+struct EvalAndDepthLeft {
+	Eval eval;
+	int depthLeftAtLastSearch;
+};
+
 struct EvalAndBestMove {
-	double eval;
+	Eval eval;
 	MoveDesc bestMove;
 	int8 depth;
 	bool abortedDueToTime = false;
 	bool noMoves = false;
-
+	vector<EvalAndDepthLeft> evalsPerMove = {};
 };
 
 class LeafNodesAndCurrPos {

@@ -9,7 +9,7 @@ int hypos = 0;
 unordered_map<ZobristHash, LeafNodesAndCurrPos> transpositionTablePerft = {};
 extern unordered_map<ZobristHash, EvalAndBestMove> transpositionTable = {};
 vector<string> movesAndLeafNodes = {};
-unordered_map<char, double> pieceTypeToVal = {
+unordered_map<char, Eval> pieceTypeToVal = {
 	{rook, 5.00},
 	{knight, 3.00},
 	{bishop, 3.00},
@@ -18,19 +18,38 @@ unordered_map<char, double> pieceTypeToVal = {
 };
 
 
-EvalAndBestMove minMax(AllCurrPositions& allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, double alpha, double beta, double cutOffTime) {
-	if (transpositionTable.find(currZobristHash) != transpositionTable.end() && depthCD <= transpositionTable[currZobristHash].depth) {
-		return transpositionTable[currZobristHash];
+EvalAndBestMove minMax(AllCurrPositions& allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, Eval alpha, Eval beta, double cutOffTime) {
+	int depthAtLastSearch = -1;
+	vector<EvalAndDepthLeft> evalsAtLastSearch = {};
+	vector<EvalAndDepthLeft> evalsPerMove = {};
+	if (transpositionTable.find(currZobristHash) != transpositionTable.end()) {
+		if (depthCD <= transpositionTable[currZobristHash].depth) {
+			return transpositionTable[currZobristHash];
+		}
+		else {
+			depthAtLastSearch = transpositionTable[currZobristHash].depth;
+			evalsAtLastSearch = transpositionTable[currZobristHash].evalsPerMove;
+		}
 	}
 
 	MovesVectAndPawnAtt resultOfSearch = fullMoveGenLoop(color, allCurrPositions, currZobristHash);
 	vector<MoveDesc>& posMoves = resultOfSearch.moves;
 
 	if (depthCD > -1) {
-		double bestEval = color ? (-INFINITY) : (INFINITY);
+
+		Eval bestEval = color ? (-INFINITY) : (INFINITY);
 		MoveDesc bestMove;
 		bestMove.nullMove = true;
+
+		if (depthAtLastSearch != -1) {
+			for (int i = 0; i < evalsAtLastSearch.size(); i++) {
+				posMoves[i].depthLeftAtLastSearch = evalsAtLastSearch[i].depthLeftAtLastSearch;
+				posMoves[i].prevEval = evalsAtLastSearch[i].eval;
+			}
+		}
+
 		orderMoves(posMoves, allCurrPositions, resultOfSearch.pawnAttacking);
+
 		for (MoveDesc move : posMoves) {
 			if (time(nullptr) > cutOffTime) {
 				EvalAndBestMove abortedRes;
@@ -58,6 +77,9 @@ EvalAndBestMove minMax(AllCurrPositions& allCurrPositions, bool color, int depth
 				return abortedRes;
 			}
 
+			//Adds this move to the transposition table's move evals such that it can sort the moves by the previous, more shallow, search.
+			evalsPerMove.push_back({ result.eval, depthCD });
+
 			//Searching for color's moves,
 			if (color ? (result.eval > bestEval) : (result.eval < bestEval)) {
 				bestEval = result.eval;
@@ -79,6 +101,7 @@ EvalAndBestMove minMax(AllCurrPositions& allCurrPositions, bool color, int depth
 		posSearchRes.depth = depthCD;
 		posSearchRes.noMoves = bestMove.nullMove;
 		posSearchRes.bestMove = bestMove;
+		posSearchRes.evalsPerMove = evalsPerMove;
 		return posSearchRes;
 	}
 	else {
@@ -132,8 +155,8 @@ ZobristHash applyMovesTo(AllCurrPositions& allCurrPositions, vector<MoveDesc> mo
 	return currZobristHash;
 }
 
-double simpleEval(AllCurrPositions allCurrPositions, bool colorToMove, ZobristHash currZobristHash) {
-	double total = 0;
+Eval simpleEval(AllCurrPositions allCurrPositions, bool colorToMove, ZobristHash currZobristHash) {
+	Eval total = 0;
 	for (int color = 0; color < 2; color++) {
 		int mult = (color) ? 1 : -1;
 		for (int pieceType = 0; pieceType < 6; pieceType++) {
@@ -162,11 +185,11 @@ double simpleEval(AllCurrPositions allCurrPositions, bool colorToMove, ZobristHa
 void orderMoves(vector<MoveDesc>& moves, AllCurrPositions& allCurrPositions, Bitboard pawnAttacking) {
 	sort(begin(moves), end(moves), [&allCurrPositions, &pawnAttacking](auto const& move1, auto const& move2) {
 		//This is the correct operator(i.e. ">")
-		return guessEval(move1, allCurrPositions, pawnAttacking) > guessEval(move2, allCurrPositions, pawnAttacking);
+		return guessEval(move1, allCurrPositions, pawnAttacking, move1.prevEval, move1.depthLeftAtLastSearch) > guessEval(move2, allCurrPositions, pawnAttacking, move2.prevEval, move2.depthLeftAtLastSearch);
 		});
 }
 
-int guessEval(MoveDesc move, AllCurrPositions& allCurrPositions, Bitboard pawnAttacking) {
+int guessEval(MoveDesc move, AllCurrPositions& allCurrPositions, Bitboard pawnAttacking, Eval evalAtLastSearch, int depthLeftAtLastSearch) {
 	int boostFactor = 0;
 	int normalizedPieceType = move.pieceType > 5 ? move.pieceType - 6 : move.pieceType;
 	if (move.moveOrCapture == CAPTURE) {
@@ -174,13 +197,18 @@ int guessEval(MoveDesc move, AllCurrPositions& allCurrPositions, Bitboard pawnAt
 		if (!move.pieceMovingColor) {
 			pieceTypeCapturing -= 6;
 		}
-		boostFactor += 10 * pieceTypeToVal[pieceTypeCapturing] - pieceTypeToVal[normalizedPieceType];
+		boostFactor += 10 * (pieceTypeToVal[pieceTypeCapturing] - pieceTypeToVal[normalizedPieceType]);
 	}
 	if (move.promotingToPiece != -1) {
-		boostFactor = pieceTypeToVal[move.promotingToPiece > 5 ? move.promotingToPiece - 6 : move.promotingToPiece];
+		boostFactor += pieceTypeToVal[move.promotingToPiece > 5 ? move.promotingToPiece - 6 : move.promotingToPiece];
 	}
 	if (getBit(pawnAttacking, move.posOfMove)) {
 		boostFactor -= pieceTypeToVal[normalizedPieceType];
+	}
+	if (depthLeftAtLastSearch != -1) {
+		//CHANGE THIS, make it a better function not just the product
+		//cout << "Using Prev Move Eval, depth: " << depthLeftAtLastSearch << endl;
+		boostFactor += evalAtLastSearch * (depthLeftAtLastSearch + 1) * 100;
 	}
 
 	return boostFactor;

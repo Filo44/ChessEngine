@@ -27,19 +27,19 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	cout << "Started" << endl;
+	cout << "Started V2" << endl;
 	httplib::Server svr;
 
 	PosAndColor gameState = fenToPosBitboards(lFen);
 	AllCurrPositions allPositionBitboards = gameState.allCurrPositions;
-	color = gameState.color; //REMOVE THIS FOR THE ONE TO ONE FOR THE CHESS ENGINES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	color = gameState.color;
 	cout << "Calculated gamestate" << endl;
 	//cout << "Board: " << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
 	ZobristHash currZobristHash = genInitZobristHash(allPositionBitboards, color);
 	cout << "Calculated the zobrist hash" << endl;
-	//vector<MoveDesc> posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
-	//cout << "Finished searching. Amount of moves found: " << posMoves.size() << endl;
-	//cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves) << endl;
+	//MovesVectAndPawnAtt posMoves = fullMoveGenLoop(color, allPositionBitboards, currZobristHash);
+	//cout << "Finished searching. Amount of moves found: " << posMoves.moves.size() << endl;
+	//cout << "Moves: " << endl << convertVectorOfMovesToJs(posMoves.moves) << endl;
 	//cout << "CurrPos: " << convertToString(allPositionBitboardsToMatrix(allPositionBitboards), 8, 8) << endl;
 	//cout << "Zobrist hash: " << currZobristHash << endl;
 
@@ -82,6 +82,7 @@ int main(int argc, char* argv[]) {
 
 	unordered_map<ZobristHash, EvalAndBestMove> transpositionTable = {};
 	EvalAndBestMove res = iterativeSearch(allPositionBitboards, color, currZobristHash, timeManagementFunction(30));
+	cout << "Eval " << moveToUCI(res.bestMove) << endl;
 	cout << "Eval " << res.eval << endl;
 
 

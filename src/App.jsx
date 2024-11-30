@@ -72,11 +72,9 @@ function App() {
 
     useEffect(() => {
         fetchDataW((data) => {
-            // console.log("FIRST TRY BABY!")
             setResponse(JSON.parse(data));
         }, "data");
         fetchDataW((data) => {
-            // console.log("FIRST TRY BABY!")
             setEvaluation(JSON.parse(data));
             setGotEvalution(true);
         }, "eval");

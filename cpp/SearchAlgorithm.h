@@ -15,9 +15,9 @@ extern vector<string> movesAndLeafNodes;
 
 
 
-EvalAndBestMove minMax(AllCurrPositions& allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, double alpha, double beta, double cutOffTime);
+EvalAndBestMove minMax(AllCurrPositions& allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, Eval alpha, Eval beta, double cutOffTime);
 ZobristHash applyMovesTo(AllCurrPositions& allCurrPositions, vector<MoveDesc> movesTo, ZobristHash currZobristHash);
 int perft(AllCurrPositions allCurrPositions, bool color, int depthCD, ZobristHash currZobristHash, int initDepth);
-double simpleEval(AllCurrPositions allCurrPositions, bool colorToMove, ZobristHash currZobristHash);
+Eval simpleEval(AllCurrPositions allCurrPositions, bool colorToMove, ZobristHash currZobristHash);
 void orderMoves(vector<MoveDesc>& moves, AllCurrPositions& allCurrPositions, Bitboard pawnAttacking);
-int guessEval(MoveDesc move, AllCurrPositions& allCurrPositions, Bitboard pawnAttacking);
+int guessEval(MoveDesc move, AllCurrPositions& allCurrPositions, Bitboard pawnAttacking, bool hasBeenSearchedBefore);

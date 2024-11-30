@@ -40,6 +40,7 @@ using MoveMag = array<int, 3>;
 using ZobristHash = uint64_t;
 using DirectionBitboards = array<Bitboard, 4>;
 using int8 = uint8_t;
+using Eval = float;
 
 class MoveDesc;
 class PieceTypeCurrPositions;
@@ -59,6 +60,7 @@ class EvalAndBestMove;
 class BitboardAndPieceInfo;
 
 using MovesByPos = array<vector<MoveDesc>, 64>;
+
 
 // char** fenToMatrix(std::string fen);
 void delete2DArray(char** arr, int rows);

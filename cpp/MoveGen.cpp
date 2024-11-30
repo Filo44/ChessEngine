@@ -430,6 +430,7 @@ MovesVectAndPawnAtt fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrP
 
 	CheckData checkChecksRes = checkChecks(allCurrPositions, colorToMove);
 	int numOfCheck = checkChecksRes.numOfChecks;
+	//cout << "numOfCheck: " << numOfCheck << endl;
 	vector<BitboardAndPieceInfo> checkerLocations = checkChecksRes.checkerLocations;
 
 	vector<MoveDesc> posMoves = {};
@@ -450,7 +451,7 @@ MovesVectAndPawnAtt fullMoveGenLoop(bool colorToMove, AllCurrPositions& allCurrP
 	addVectorsCopyFirst(bitboardToMoveVector(legalKingMoves.moveBitboard, colorToMove, colorToMove ? whiteKing : blackKing, MOVE, kingPos), posMoves);
 	addVectorsCopyFirst(bitboardToMoveVector(legalKingMoves.capBitboard, colorToMove, colorToMove ? whiteKing : blackKing, CAPTURE, kingPos), posMoves);
 
-	return { posMoves, attackingAndPinned.pawnAttacking };
+	return { move(posMoves), attackingAndPinned.pawnAttacking };
 }
 
 AttackingAndPinnedBBs genAttackingAndPinned(AllCurrPositions allCurrPositions, bool colorToMove, int kingPos) {
